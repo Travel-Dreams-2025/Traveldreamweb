@@ -1,0 +1,30 @@
+  <main>
+    <div class="container">
+      <section class="py-5">
+        <div class="row justify-content-center">
+          <div class="col-lg-8 col-xxl-6">
+            <div class="text-center my-5">
+              <h3 class="section-heading mb-5">¿Quiénes Somos?</h3>
+              <p>{{ mision }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="p-5 page-section" id="team">
+        <div class="text-center">
+          <h3 class="section-heading mb-5">Nuestro Equipo</h3>
+        </div>
+        <div class="row">
+          <div class="col-md-4" *ngFor="let nosotros of profesionalList; trackBy: trackById" >
+            <div>
+              <img class="rounded-circle img-fluid" [src]="nosotros.imagen || defaultImage" alt="{{ nosotros.nombre_apellido }}" />
+              <h5>{{ nosotros.nombre_apellido }}</h5>
+              <p>{{ nosotros.rol }}</p>
+              <a class="btn btn-social mx-2" [href]="nosotros.github"><i class="fab fa-github"></i></a>
+              <a class="btn btn-social mx-2" [href]="nosotros.linkedin"><i class="fab fa-linkedin-in"></i></a>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div>
+  </main>

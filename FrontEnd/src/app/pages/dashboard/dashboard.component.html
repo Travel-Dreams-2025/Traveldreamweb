@@ -1,0 +1,46 @@
+<div class="container mt-4">
+  <h2>Perfil de Usuario</h2>
+  <table class="table table-striped">
+    <tbody *ngIf="usuario">
+      <tr>
+        <th>Username</th>
+        <td>{{ usuario.username }}</td>
+      </tr>
+      <tr>
+        <th>Email</th>
+        <td>{{ usuario.email }}</td>
+      </tr>
+      <tr>
+        <th>Nombre</th>
+        <td>{{ usuario.first_name }}</td>
+      </tr>
+      <tr>
+        <th>Apellido</th>
+        <td>{{ usuario.last_name }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Mis Compras</h2>
+  <div *ngIf="compras.length === 0" class="alert alert-info">
+    No has realizado ninguna compra.
+  </div>
+  <div *ngIf="compras.length > 0">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Destino</th>
+          <th>Cantidad</th>
+          <th>Método de Pago</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let compra of compras">
+          <td>{{ compra.id_destino}}</td>
+          <td>{{ compra.cantidad }}</td>
+          <td>{{ compra.id_metodoPago.nombrePago }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
