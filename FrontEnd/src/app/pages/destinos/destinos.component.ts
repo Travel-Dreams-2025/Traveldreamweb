@@ -11,7 +11,7 @@ import { AlertaComponent } from '../../alerta/alerta.component';
 @Component({
   selector: 'app-destinos',
   standalone: true,
-  imports: [CommonModule, RouterModule, HttpClientModule, AlertaComponent],
+  imports: [CommonModule, RouterModule, HttpClientModule, AlertaComponent], 
   templateUrl: './destinos.component.html',
   styleUrls: ['./destinos.component.css']
 })
@@ -20,7 +20,8 @@ export class DestinosComponent implements OnInit {
   titulo: string = "Nuestros Destinos";
   tipoAlerta: string = '';
   mensajeAlerta: string = '';
-  contadorCarrito: number = 0; // Contador para el carrito
+  contadorCarrito: number = 0;
+  destinoSeleccionado: Destino | null = null; // Para manejar el destino en el modal
 
   constructor(
     private destinosService: DestinosService,
@@ -39,16 +40,20 @@ export class DestinosComponent implements OnInit {
     });
   }
 
-  agregarAlCarrito(destino: Destino): void {
+  abrirModal(destino: Destino): void {
+    this.destinoSeleccionado = destino;
+  }
+
+  agregarAlCarrito(destino: Destino | null): void {
+    if (!destino) return; // Control por si acaso
+
     if (this.authService.isLoggedIn()) {
       this.carritoService.agregarCarrito(destino.id_destino).subscribe(() => {
-        // Incrementa el contador del carrito
         this.contadorCarrito++;
-        // Mostrar alerta de éxito
-        this.mostrarAlerta('Producto agregado al carrito', 'success');
+        this.mostrarAlerta('Producto agregado al carrito con éxito', 'success');
+        
       }, (error: any) => {
         console.error('Error al agregar al carrito', error);
-        // Mostrar alerta de error
         this.mostrarAlerta('Error al agregar al carrito', 'danger');
       });
     } else {
@@ -57,25 +62,25 @@ export class DestinosComponent implements OnInit {
   }
 
   mostrarAlerta(mensaje: string, tipo: string): void {
-    // Asignamos los valores de la alerta
     this.mensajeAlerta = mensaje;
     this.tipoAlerta = tipo;
-
-    // Muestra el toast
     this.showAlert();
   }
 
   showAlert(): void {
-    const toast = document.getElementById('liveToast');
-    if (toast) {
-      toast.classList.add('show');
+    const toastElement = document.getElementById('liveToast'); 
+    if (toastElement) {
+        const toastBootstrap = new (window as any).bootstrap.Toast(toastElement);
+        toastBootstrap.show();
+    } else {
+         console.warn('Elemento Toast con ID "liveToast" no encontrado. La alerta puede no mostrarse.');
       setTimeout(() => {
-        toast.classList.remove('show');
         this.mensajeAlerta = '';
         this.tipoAlerta = '';
-      }, 5000); // Oculta el toast después de 5 segundos
+           }, 5000);
     }
   }
+
 
   trackById(index: number, destino: Destino): number {
     return destino.id_destino;

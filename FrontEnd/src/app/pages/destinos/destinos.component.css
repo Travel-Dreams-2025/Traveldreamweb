@@ -1,10 +1,19 @@
 .custom-btn {
     background-color: #240B5C; 
     border-color: #240B5C;
+    color: white; /* Añadido para asegurar texto blanco en botón principal */
 }
 
 .card {
     flex: 1 1 auto; 
+    display: flex; /* Asegura que flex funcione correctamente */
+    flex-direction: column; /* Organiza el contenido de la card verticalmente */
+}
+
+.card-body {
+    flex-grow: 1; /* Permite que el card-body crezca */
+    display: flex; /* Usa flex para alinear elementos internos */
+    flex-direction: column; /* Alinea elementos del body verticalmente */
   }
 
   .precio {
@@ -13,20 +22,92 @@
   }
 
   .bordered-btn {
-    border: 3px solid #240B5C;
+    border: 2px solid #240B5C; /* Ajustado grosor para consistencia */
     padding: 5px 10px; 
     border-radius: 5px; 
     color: #240B5C;
     font-weight: bold;
+    background-color: transparent; /* Asegura fondo transparente */
+    transition: background-color 0.2s, color 0.2s; /* Añade transición suave */
+}
+
+.bordered-btn:hover {
+    background-color: #240B5C; /* Cambia fondo en hover */
+    color: white; /* Cambia texto en hover */
   }
 
   .card-title {
-    color: #240B5C!important;
+    color: #240B5C !important;
     font-weight: bold;
   }
+
   .custom-title {
-    color:#240B5C;
+    color: #240B5C;
     font-weight: bold;
     text-align: center;
     padding-top: 20px;
+    margin-bottom: 20px; /* Añadido margen inferior */
+}
+
+.card-img-top {
+    width: 100%;
+    height: 200px; /* Altura fija para las imágenes */
+    object-fit: cover; /* Asegura que la imagen cubra el espacio sin distorsionarse */
+}
+
+/* Estilos para el Modal */
+.modal-content {
+    border-radius: 0.5rem; /* Bordes redondeados para el modal */
+}
+
+.modal-header {
+    border-bottom: 1px solid #dee2e6; /* Línea divisoria sutil */
+    background-color: #f8f9fa; /* Fondo ligero para el header */
+}
+
+.modal-body .img-fluid {
+    max-height: 400px; /* Limita altura de la imagen en el modal */
+    object-fit: cover;
+}
+
+.modal-body .precio {
+    margin-bottom: 1rem; /* Espacio debajo del precio */
+}
+
+.modal-dialog.modal-lg {
+    max-width: 800px; /* Ancho máximo para el modal grande */
+}
+
+/* Estilos responsivos para las cards */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+/* Asegura que las columnas tengan el mismo alto en cada fila si es necesario */
+.d-flex.align-items-stretch {
+    display: flex;
+    align-items: stretch;
+}
+
+/* Ajustes responsivos generales (Bootstrap ya maneja mucho de esto) */
+@media (max-width: 768px) {
+    .card-img-top {
+        height: 180px; /* Altura ligeramente menor en pantallas medianas */
+    }
+}
+
+@media (max-width: 576px) {
+    .card-img-top {
+        height: 150px; /* Altura menor en pantallas pequeñas */
+    }
+     .modal-dialog {
+        margin: 0.5rem; /* Menor margen en pantallas pequeñas */
+    }
+     .modal-body .row > div { /* Asegura que las columnas del modal se apilen en móvil */
+        margin-bottom: 1rem;
+    }
+    .modal-body .img-fluid {
+        max-height: 300px; /* Altura de imagen más pequeña en móvil */
+    }
   }
