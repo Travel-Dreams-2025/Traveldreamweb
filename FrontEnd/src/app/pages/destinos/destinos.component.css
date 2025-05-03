@@ -1,14 +1,30 @@
 .custom-btn {
     background-color: #240B5C; 
     border-color: #240B5C;
-    color: white; /* Añadido para asegurar texto blanco en botón principal */
+color: white;
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out; /* Transición suave */
+}
+.custom-btn:hover {
+    background-color: #3a1a8c; /* Un tono ligeramente más claro o diferente para el hover */
+    border-color: #3a1a8c;
 }
 
 .card {
     flex: 1 1 auto; 
     display: flex; 
     flex-direction: column; 
+    border: none; /* Quitar borde por defecto si se añade sombra */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Sombra sutil inicial */
+    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out; /* Transición suave para sombra y transform */
 }
+
+/* --- Nuevo Estilo para Hover en Card --- */
+.product-card-hover:hover {
+    box-shadow: 0 5px 15px rgba(36, 11, 92, 0.2); /* Sombra más pronunciada y con color base */
+    transform: translateY(-5px); /* Elevar ligeramente la card */
+    cursor: pointer; /* Cambiar cursor a puntero */
+}
+/* --- Fin Estilo Hover --- */
 
 .card-body {
     flex-grow: 1; 
@@ -37,7 +53,7 @@
   }
 
   .card-title {
-    color: #240B5C !important;
+    color: #240B5C !important; /* Usar !important con precaución */
     font-weight: bold;
   }
 
@@ -58,6 +74,8 @@
 /* Estilos para el Modal */
 .modal-content {
     border-radius: 0.5rem; 
+    border: none; /* Quitar borde si se usa sombra */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
 }
 
 .modal-header {
@@ -65,49 +83,71 @@
     background-color: #f8f9fa; 
 }
 
-.modal-body .img-fluid {
-    max-height: 400px; 
+.modal-image { /* Clase añadida a la imagen del modal */
+   max-height: 350px; /* Ajustar altura máxima si es necesario */
+   width: 100%;
     object-fit: cover;
+   border-radius: 0.25rem; /* Bordes redondeados suaves */
 }
 
 .modal-body .precio {
-    margin-bottom: 1rem; 
+margin-bottom: 0; /* Ajustado, el espacio ahora lo da el contenedor flex */
 }
 
 .modal-dialog.modal-lg {
     max-width: 800px; 
 }
 
-/* Estilos responsivos para las cards */
+/* Estilos para Controles de Cantidad */
+.quantity-control {
+  max-width: 130px; /* Ancho máximo para el control */
+}
+.quantity-control .form-control {
+  background-color: #fff; /* Fondo blanco para el input readonly */
+  border-left: none;
+  border-right: none;
+}
+.quantity-control .btn {
+  z-index: 1; /* Asegurar que los botones estén sobre el input */
+}
+
+/* Estilos responsivos */
 .row {
     display: flex;
     flex-wrap: wrap;
 }
 
-/* Asegura que las columnas tengan el mismo alto en cada fila si es necesario */
 .d-flex.align-items-stretch {
     display: flex;
     align-items: stretch;
 }
 
-/* Ajustes responsivos generales (Bootstrap ya maneja mucho de esto) */
 @media (max-width: 768px) {
     .card-img-top {
-        height: 180px; /* Altura ligeramente menor en pantallas medianas */
+        height: 180px;
+    }
+    .modal-image {
+        max-height: 300px;
     }
 }
 
 @media (max-width: 576px) {
     .card-img-top {
-        height: 150px; /* Altura menor en pantallas pequeñas */
+        height: 150px;
     }
      .modal-dialog {
-        margin: 0.5rem; /* Menor margen en pantallas pequeñas */
+        margin: 0.5rem;
     }
-     .modal-body .row > div { /* Asegura que las columnas del modal se apilen en móvil */
+.modal-body .row > div {
         margin-bottom: 1rem;
     }
-    .modal-body .img-fluid {
-        max-height: 300px; /* Altura de imagen más pequeña en móvil */
+     .modal-body .row > div:last-child {
+        margin-bottom: 0; /* Quitar margen inferior al último elemento en vista móvil */
+    }
+.modal-image {
+        max-height: 250px;
+    }
+    .quantity-control {
+      max-width: 120px; /* Ligeramente más pequeño en móviles */
     }
   }
