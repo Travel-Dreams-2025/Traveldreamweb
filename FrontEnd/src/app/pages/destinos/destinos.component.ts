@@ -58,9 +58,9 @@ export class DestinosComponent implements OnInit {
     this.actualizarPrecioTotalModal();
     this.agregandoAlCarrito = false;
     // Resetear estado del botón
-    // Opcional: Asegurarse que no haya backdrops o clases modal-open persistentes antes de abrir
+    // Limpieza preventiva al abrir el modal
+    this.cleanBodyStyles();
     this.removeModalBackdrop();
-    document.body.classList.remove('modal-open');
   }
 
   incrementarCantidad(): void {
@@ -165,40 +165,37 @@ export class DestinosComponent implements OnInit {
     }
   }
 
-  // Modificación de la función cerrarModal para mejorar el manejo del backdrop y la clase modal-open
+  // Modificación de la función cerrarModal para asegurar la eliminación de estilos de scroll
   cerrarModal(callback?: () => void): void {
     const modalElement = document.getElementById('destinoModal');
     if (modalElement) {
       console.log('cerrarModal: Elemento modal encontrado.'); // Log de depuración
-      // Intentar obtener la instancia del modal de Bootstrap
       const modalInstance = bootstrap.Modal.getInstance(modalElement);
 
       if (modalInstance) {
         console.log('cerrarModal: Instancia de Bootstrap Modal encontrada.'); // Log de depuración
-        // Añadir un listener para el evento 'hidden.bs.modal' que se dispara cuando el modal ha terminado de ocultarse
+        // Añadir un listener para el evento 'hidden.bs.modal'
         modalElement.addEventListener('hidden.bs.modal', () => {
           console.log('cerrarModal: Evento hidden.bs.modal disparado. Realizando limpieza.'); // Log de depuración
-          // Asegurarnos de remover la clase 'modal-open' del body para restablecer el scroll
-          document.body.classList.remove('modal-open');
+          // Asegurarnos de remover la clase 'modal-open' y limpiar estilos de overflow del body
+          this.cleanBodyStyles();
           // Intentar remover manualmente cualquier backdrop persistente
           this.removeModalBackdrop();
-          // Ejecutar el callback si existe, después de la limpieza
+          // Ejecutar el callback si existe
           if (callback) {
             console.log('cerrarModal: Ejecutando callback del evento hidden.bs.modal.'); // Log de depuración
             callback();
           }
-        }, { once: true }); // Usar { once: true } para que el listener se remueva automáticamente después de ejecutarse una vez
+        }, { once: true }); // Usar { once: true } para que el listener se remueva automáticamente
 
         console.log('cerrarModal: Ocultando modal con instancia de Bootstrap.'); // Log de depuración
-        // Ocultar el modal usando la API de Bootstrap
         modalInstance.hide();
 
       } else {
          console.warn('cerrarModal: No se encontró instancia de Bootstrap modal para #destinoModal.'); // Log de depuración
-         // Si no se encuentra la instancia (puede ocurrir en casos de cierre forzado o errores),
-         // realizamos la limpieza manualmente de inmediato.
+         // Si no se encuentra la instancia, realizamos la limpieza manual de inmediato.
          console.log('cerrarModal: No se encontró instancia, realizando limpieza manual inmediata.'); // Log de depuración
-         document.body.classList.remove('modal-open');
+         this.cleanBodyStyles();
          this.removeModalBackdrop();
          if (callback) {
             console.log('cerrarModal: Ejecutando callback inmediatamente (sin instancia).'); // Log de depuración
@@ -209,7 +206,7 @@ export class DestinosComponent implements OnInit {
        console.warn('cerrarModal: Elemento modal con ID #destinoModal no encontrado.'); // Log de depuración
        // Si el elemento modal no se encuentra, también limpiamos por si acaso.
        console.log('cerrarModal: Elemento modal no encontrado, realizando limpieza manual inmediata.'); // Log de depuración
-       document.body.classList.remove('modal-open');
+       this.cleanBodyStyles();
        this.removeModalBackdrop();
        if (callback) {
           console.log('cerrarModal: Ejecutando callback inmediatamente (sin elemento modal).'); // Log de depuración
@@ -218,11 +215,23 @@ export class DestinosComponent implements OnInit {
     }
   }
 
+  // Nueva función para limpiar la clase modal-open y el estilo overflow del body
+  private cleanBodyStyles(): void {
+    document.body.classList.remove('modal-open');
+    // Eliminar específicamente el estilo overflow si fue aplicado directamente (Bootstrap lo hace)
+    if (document.body.style.overflow === 'hidden') {
+      document.body.style.overflow = ''; // Restablecer al valor por defecto
+    }
+     // Opcional: también resetear padding-right que Bootstrap usa para compensar la scrollbar
+    if (document.body.style.paddingRight !== '') {
+       document.body.style.paddingRight = '';
+    }
+     console.log('cleanBodyStyles: Clase modal-open y estilo overflow del body limpiados.'); // Log de depuración
+  }
+
 
   // Función para intentar remover el backdrop manualmente
-  // Permanece igual, ya es una buena práctica de respaldo.
   removeModalBackdrop(): void {
-    // Bootstrap 5 usa la clase 'modal-backdrop' por defecto
     const backdrop = document.querySelector('.modal-backdrop');
     if (backdrop) {
       console.log('removeModalBackdrop: Backdrop de modal encontrado, intentando remover.'); // Log de depuración
@@ -237,46 +246,36 @@ export class DestinosComponent implements OnInit {
     this.mensajeAlerta = mensaje;
     this.tipoAlerta = tipo;
     this.cdRef.detectChanges();
-    // Forzar detección de cambios para que la alerta se muestre
     this.showAlert();
   }
 
   showAlert(): void {
     const toastElement = document.getElementById('liveToast'); 
-    // Asegúrate de que el ID 'liveToast' coincida con el de tu componente de alerta.
-    // También verificamos si bootstrap y bootstrap.Toast están disponibles globalmente.
     if (toastElement && typeof bootstrap !== 'undefined' && typeof bootstrap.Toast !== 'undefined') {
       try {
           console.log('showAlert: Intentando mostrar Bootstrap Toast.'); // Log de depuración
-          // Obtener o crear una instancia del Toast de Bootstrap
           const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastElement);
-          // Mostrar el Toast
         toastBootstrap.show();
            console.log('showAlert: Bootstrap Toast mostrado.'); // Log de depuración
       } catch (e) {
           console.error("showAlert: Error al mostrar el toast de Bootstrap:", e); // Log de depuración
-          // Fallback: si hay un error con Bootstrap, limpiar la alerta después de un tiempo.
           this.limpiarAlertaDespuesDeTiempo();
       }
     } else {
       console.warn('showAlert: Elemento Toast con ID "liveToast" no encontrado o Bootstrap Toast no disponible.'); // Log de depuración
-       // Si no se encuentra el elemento Toast o Bootstrap Toast no está disponible, limpiar alerta.
        this.limpiarAlertaDespuesDeTiempo();
     }
-     // Independientemente de si se usó el Toast de Bootstrap (que tiene auto-hide),
-     // programamos la limpieza del estado de la alerta en el componente después de un tiempo.
-     // Esto asegura que la alerta desaparezca del DOM y el estado del componente se resetee.
       setTimeout(() => {
              console.log('showAlert: Timeout para limpiar estado de alerta.'); // Log de depuración
              this.limpiarAlerta();
-     }, 6000); // Ajusta este tiempo si tu Toast de Bootstrap tiene una duración diferente.
+     }, 6000);
   }
 
   limpiarAlerta(): void {
     console.log('limpiarAlerta: Limpiando estado de alerta.'); // Log de depuración
     this.mensajeAlerta = '';
         this.tipoAlerta = '';
-    this.cdRef.detectChanges(); // Actualizar vista para remover la alerta
+    this.cdRef.detectChanges();
   }
 
   limpiarAlertaDespuesDeTiempo(tiempo: number = 5000): void {
