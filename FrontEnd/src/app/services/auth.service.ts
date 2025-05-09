@@ -7,10 +7,10 @@ import { catchError, map } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class AuthService {
-  private loginUrl = 'http://dtapp.pythonanywhere.com/api/v1/login/';
-  private registerUrl = 'http://dtapp.pythonanywhere.com/api/v1/register/';
+  private loginUrl = 'https://dreamtravel.pythonanywhere.com/api/v1/auth/login/';
+  private registerUrl = 'https://dreamtravel.pythonanywhere.com/api/v1/auth/register/';
   private refreshTokenUrl =
-    'http://dtapp.pythonanywhere.com/api/v1/token/refresh/';
+    'https://dreamtravel.pythonanywhere.com/api/v1/auth/token/refresh/';
 
   constructor(private http: HttpClient) {}
 
