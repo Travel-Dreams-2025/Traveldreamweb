@@ -6,26 +6,26 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class CarritoService {
-  private baseUrl = ' http://dtapp.pythonanywhere.com/api/v1/'; // Django server URL base
+  private baseUrl = 'https://dreamtravel.pythonanywhere.com/api/v1'; // Django server URL base
 
   constructor(private http: HttpClient) {}
 
   agregarCarrito(id_destino: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/agregar-al-carrito/`, {
+    return this.http.post(`${this.baseUrl}/add/`, {
       id_destino,
     });
   }
 
   obtenerCarrito(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/carrito/`);
+    return this.http.get(`${this.baseUrl}/cart/`);
   }
 
   eliminarItem(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/eliminar-item-carrito/${id}/`);
+    return this.http.delete(`${this.baseUrl}/remove/${id}/`);
   }
 
   actualizarItem(id: number, cantidad: number): Observable<any> {
-    return this.http.put(`${this.baseUrl}/carrito/${id}/actualizar_cantidad/`, {
+    return this.http.put(`${this.baseUrl}/cart/${id}/update_quantity/`, {
       cantidad,
     });
   }
@@ -34,7 +34,7 @@ export class CarritoService {
     return this.http.get(`${this.baseUrl}/destinos/`);
   }
   actualizarFecha(id: number, fecha_salida: string): Observable<any> {
-    return this.http.put(`${this.baseUrl}/carrito/${id}/actualizar_fecha/`, {
+    return this.http.put(`${this.baseUrl}/cart/${id}/actualizar_fecha/`, {
       fecha_salida,
     });
   }
@@ -48,6 +48,6 @@ export class CarritoService {
     });
   }
   listarCompras(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/listar-compras/`);
+    return this.http.get(`${this.baseUrl}/purchases/`);
   }
 }

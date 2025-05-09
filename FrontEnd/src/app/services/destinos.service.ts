@@ -7,7 +7,7 @@ import { Destino } from '../models/destinos';
   providedIn: 'root',
 })
 export class DestinosService {
-  private apiUrl = 'http://dtapp.pythonanywhere.com/api/v1/destinos/';
+  private apiUrl = 'https://dreamtravel.pythonanywhere.com/api/v1/destinos/';
 
   constructor(private http: HttpClient) {}
 
