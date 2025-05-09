@@ -1,46 +1,42 @@
-<div class="container mt-4">
-  <h2>Perfil de Usuario</h2>
-  <table class="table table-striped">
-    <tbody *ngIf="usuario">
-      <tr>
-        <th>Username</th>
-        <td>{{ usuario.username }}</td>
-      </tr>
-      <tr>
-        <th>Email</th>
-        <td>{{ usuario.email }}</td>
-      </tr>
-      <tr>
-        <th>Nombre</th>
-        <td>{{ usuario.first_name }}</td>
-      </tr>
-      <tr>
-        <th>Apellido</th>
-        <td>{{ usuario.last_name }}</td>
-      </tr>
-    </tbody>
-  </table>
+<div class="dashboard-container">
+  <!-- Encabezado -->
+  <div class="header">
+    <img *ngFor="let img of images" 
+         [src]="img.src" 
+         [alt]="img.alt" 
+         [style.height.px]="img.height">
+  </div>
 
-  <h2>Mis Compras</h2>
-  <div *ngIf="compras.length === 0" class="alert alert-info">
-    No has realizado ninguna compra.
+  <!-- Contenido principal -->
+  <div *ngIf="loading; else content">
+    <p>Cargando información...</p>
   </div>
-  <div *ngIf="compras.length > 0">
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Destino</th>
-          <th>Cantidad</th>
-          <th>Método de Pago</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let compra of compras">
-          <td>{{ compra.id_destino}}</td>
-          <td>{{ compra.cantidad }}</td>
-          <td>{{ compra.id_metodoPago.nombrePago }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+
+  <ng-template #content>
+    <div *ngIf="error; else profileContent" class="error-message">
+      {{ error }}
+    </div>
+
+    <ng-template #profileContent>
+      <div class="profile-section" *ngIf="usuario">
+        <h2>Bienvenido, {{ usuario.first_name }} {{ usuario.last_name }}</h2>
+        <div class="profile-details">
+          <img [src]="usuario.image" alt="Foto de perfil">
+          <div>
+            <p><strong>Email:</strong> {{ usuario.email }}</p>
+            <p><strong>Teléfono:</strong> {{ usuario.telephone }}</p>
+            <p><strong>DNI:</strong> {{ usuario.dni }}</p>
+            <p><strong>Dirección:</strong> {{ usuario.address }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="purchases-section" *ngIf="compras.length > 0">
+        <h3>Tus compras recientes</h3>
+        <ul>
+          <li *ngFor="let compra of compras">{{ compra.detalles }}</li>
+        </ul>
+      </div>
+    </ng-template>
+  </ng-template>
 </div>
