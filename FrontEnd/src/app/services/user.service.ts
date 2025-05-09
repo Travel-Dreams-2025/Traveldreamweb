@@ -17,6 +17,6 @@ export class UserService {
   }
 
   listarCompras(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/listar-compras/`);
+    return this.http.get(`${this.baseUrl}/purchases/`);
   }
 }

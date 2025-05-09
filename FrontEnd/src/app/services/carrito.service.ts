@@ -11,7 +11,7 @@ export class CarritoService {
   constructor(private http: HttpClient) {}
 
   agregarCarrito(id_destino: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/add/`, {
+    return this.http.post(`${this.baseUrl}/cart/add/`, {
       id_destino,
     });
   }
