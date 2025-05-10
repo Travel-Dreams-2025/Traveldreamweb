@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class UserService {
-  private baseUrl = 'http://dtapp.pythonanywhere.com/api/v1';
+  private baseUrl = 'https://dreamtravel.pythonanywhere.com/api/v1';
 
   constructor(private http: HttpClient) {}
 
@@ -17,6 +17,6 @@ export class UserService {
   }
 
   listarCompras(): Observable<any> {
-    return this.http.get(`${this.baseUrl}/listar-compras/`);
+    return this.http.get(`${this.baseUrl}/purchases/`);
   }
 }

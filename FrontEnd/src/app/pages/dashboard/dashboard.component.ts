@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { CarritoService } from '../../services/carrito.service';
 import { UserService } from '../../services/user.service';
+import { ProfileService } from '../../services/profile.service'; // Nuevo servicio
 
 @Component({
   selector: 'app-dashboard',
@@ -18,22 +18,40 @@ export class DashboardComponent implements OnInit {
   ];
 
   compras: any[] = [];
-  usuario: any;
+  usuario: any = null;
+  loading: boolean = true;
+  error: string | null = null;
 
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private profileService: ProfileService // Inyectamos el nuevo servicio
+  ) {}
 
   ngOnInit(): void {
-    this.listarCompras();
     this.obtenerPerfil();
+    this.listarCompras();
   }
 
   obtenerPerfil(): void {
-    this.userService.obtenerPerfil().subscribe({
+    this.loading = true;
+    this.error = null;
+    
+    this.profileService.getProfile().subscribe({
       next: (usuario: any) => {
-        this.usuario = usuario;
+        this.usuario = {
+          ...usuario,
+          // Aseguramos valores por defecto para campos opcionales
+          image: usuario.image ? 'https://dreamtravel.pythonanywhere.com' + usuario.image : 'assets/img/A01_avatar_mujer.png',
+          telephone: usuario.telephone || 'No proporcionado',
+          address: usuario.address || 'No proporcionada',
+          dni: usuario.dni || 'No proporcionado'
+        };
+        this.loading = false;
       },
       error: (error: any) => {
         console.error('Error al obtener el perfil del usuario', error);
+        this.error = 'Error al cargar el perfil. Por favor, intenta nuevamente.';
+        this.loading = false;
       }
     });
   }
@@ -45,6 +63,7 @@ export class DashboardComponent implements OnInit {
       },
       error: (error: any) => {
         console.error('Error al listar las compras', error);
+        // Puedes agregar manejo de errores específico para compras aquí
       }
     });
   }
