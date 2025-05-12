@@ -21,9 +21,8 @@
       <div class="profile-section" *ngIf="usuario">
         <h2>Bienvenido, {{ usuario.first_name }} {{ usuario.last_name }}</h2>
         <div class="profile-details">
-          <img [src]="usuario.image" alt="Foto de perfil">
-          <div>
-            <p><strong>Email:</strong> {{ usuario.email }}</p>
+          <img [src]="usuario.image" alt="Foto de perfil" class="profile-image">
+          <div class="profile-info">
             <p><strong>Teléfono:</strong> {{ usuario.telephone }}</p>
             <p><strong>DNI:</strong> {{ usuario.dni }}</p>
             <p><strong>Dirección:</strong> {{ usuario.address }}</p>
@@ -33,9 +32,35 @@
 
       <div class="purchases-section" *ngIf="compras.length > 0">
         <h3>Tus compras recientes</h3>
-        <ul>
-          <li *ngFor="let compra of compras">{{ compra.detalles }}</li>
-        </ul>
+        <div class="purchase-list">
+          <div *ngFor="let compra of compras" class="purchase-card">
+            <div class="purchase-header">
+              <span class="destination">{{ compra.nombre_destino }}</span>
+              <span class="purchase-id">#{{ compra.id_compra }}</span>
+            </div>
+            <div class="purchase-details">
+              <div class="detail-item">
+                <span class="detail-label">Fecha:</span>
+                <span>{{ compra.fechaFormateada }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Cantidad:</span>
+                <span>{{ compra.cantidad }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Total:</span>
+                <span>${{ compra.total | number:'1.2-2' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Método de pago:</span>
+                <span>{{ compra.metodoPago }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="no-purchases" *ngIf="compras.length === 0 && !loading">
+        <p>No tienes compras registradas</p>
       </div>
     </ng-template>
   </ng-template>

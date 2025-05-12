@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { UserService } from '../../services/user.service';
-import { ProfileService } from '../../services/profile.service'; // Nuevo servicio
+import { ProfileService } from '../../services/profile.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,7 +24,7 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private userService: UserService,
-    private profileService: ProfileService // Inyectamos el nuevo servicio
+    private profileService: ProfileService
   ) {}
 
   ngOnInit(): void {
@@ -40,7 +40,6 @@ export class DashboardComponent implements OnInit {
       next: (usuario: any) => {
         this.usuario = {
           ...usuario,
-          // Aseguramos valores por defecto para campos opcionales
           image: usuario.image ? 'https://dreamtravel.pythonanywhere.com' + usuario.image : 'assets/img/A01_avatar_mujer.png',
           telephone: usuario.telephone || 'No proporcionado',
           address: usuario.address || 'No proporcionada',
@@ -59,12 +58,34 @@ export class DashboardComponent implements OnInit {
   listarCompras(): void {
     this.userService.listarCompras().subscribe({
       next: (compras: any[]) => {
-        this.compras = compras;
+        this.compras = compras.map(compra => ({
+          ...compra,
+          fechaFormateada: this.formatearFecha(compra.fecha_creacion),
+          metodoPago: compra.id_metodoPago?.nombrePago || 'No especificado'
+        }));
+        console.log('Compras procesadas:', this.compras); // Para depuración
       },
       error: (error: any) => {
         console.error('Error al listar las compras', error);
-        // Puedes agregar manejo de errores específico para compras aquí
+        this.error = 'Error al cargar el historial de compras.';
       }
     });
+  }
+
+  private formatearFecha(fecha: string): string {
+    if (!fecha) return 'Fecha no disponible';
+    
+    try {
+      return new Date(fecha).toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      console.error('Error al formatear fecha:', e);
+      return fecha; // Devuelve la fecha original si hay error
+    }
   }
 }
