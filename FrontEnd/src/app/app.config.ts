@@ -8,6 +8,7 @@ import { CarritoService } from './services/carrito.service';
 import { AlertaComponent } from './alerta/alerta.component';
 import { UserService } from './services/user.service';
 
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes, withComponentInputBinding()),
