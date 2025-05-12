@@ -21,15 +21,47 @@
       <div class="profile-section" *ngIf="usuario">
         <h2>Bienvenido, {{ usuario.first_name }} {{ usuario.last_name }}</h2>
         <div class="profile-details">
-          <img [src]="usuario.image" alt="Foto de perfil" class="profile-image">
+          <div class="profile-image-container">
+            <img [src]="usuario.image" alt="Foto de perfil" class="profile-image">
+            <div class="image-upload">
+              <input type="file" id="profileImage" (change)="onFileSelected($event)" accept="image/*" style="display: none;">
+              <label for="profileImage" class="upload-button">Cambiar foto</label>
+            </div>
+          </div>
+          
           <div class="profile-info">
-            <p><strong>Teléfono:</strong> {{ usuario.telephone }}</p>
-            <p><strong>DNI:</strong> {{ usuario.dni }}</p>
-            <p><strong>Dirección:</strong> {{ usuario.address }}</p>
+            <div *ngIf="!editMode">
+              <p><strong>Teléfono:</strong> {{ usuario.telephone }}</p>
+              <p><strong>DNI:</strong> {{ usuario.dni }}</p>
+              <p><strong>Dirección:</strong> {{ usuario.address }}</p>
+              <button (click)="toggleEditMode()" class="edit-button">Editar Perfil</button>
+            </div>
+
+            <div *ngIf="editMode" class="edit-form">
+              <div class="form-group">
+                <label for="telephone">Teléfono:</label>
+                <input type="text" id="telephone" [(ngModel)]="usuarioEditado.telephone">
+              </div>
+              <div class="form-group">
+                <label for="dni">DNI:</label>
+                <input type="text" id="dni" [(ngModel)]="usuarioEditado.dni">
+              </div>
+              <div class="form-group">
+                <label for="address">Dirección:</label>
+                <input type="text" id="address" [(ngModel)]="usuarioEditado.address">
+              </div>
+              <div class="form-actions">
+                <button (click)="guardarCambios()" class="save-button" [disabled]="loadingSave">
+                  {{ loadingSave ? 'Guardando...' : 'Guardar Cambios' }}
+                </button>
+                <button (click)="toggleEditMode()" class="cancel-button">Cancelar</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- Sección de compras (sin cambios) -->
       <div class="purchases-section" *ngIf="compras.length > 0">
         <h3>Tus compras recientes</h3>
         <div class="purchase-list">
