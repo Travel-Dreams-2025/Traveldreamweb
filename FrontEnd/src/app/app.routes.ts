@@ -12,6 +12,8 @@ import { DestinosDetailsComponent } from './pages/destinos-details/destinos-deta
 import { AuthGuard } from './interceptors/auth.guard';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { RecuperarPasswordComponent } from './pages/recuperar-password/recuperar-password.component';
+import { NuevoPasswordComponent } from './pages/auth/nuevo-password/nuevo-password.component';
+
 
 
 
@@ -28,6 +30,9 @@ export const routes: Routes = [
   { path: 'nosotros', component: NosotrosComponent },
   { path: 'nosotros/:id', component: ProfesionalComponent },
   { path: 'recuperar-password', loadComponent: () => import('./pages/recuperar-password/recuperar-password.component').then(m => m.RecuperarPasswordComponent) },
+  { path: 'new-password', component: NuevoPasswordComponent },
+  { path: '', redirectTo: 'recuperar-password', pathMatch: 'full' },
+  { path: '**', redirectTo: 'recuperar-password' },
   { path: '**', component: Pagina404Component },
 
 ];
