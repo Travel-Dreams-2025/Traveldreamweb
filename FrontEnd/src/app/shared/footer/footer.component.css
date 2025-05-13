@@ -1,56 +1,57 @@
 .footer {
-  background-color: #240B5C;
-  color: #fff;
-  padding: 20px 0;
+  background-image: linear-gradient(
+    to bottom,
+    #240b5c,
+    #370080
+  ); /* Degradado sutil */
+  color: #f0f0f0; /* Texto general un poco más claro */
+  padding: 40px 0; /* Aumenté el padding vertical */
+  position: relative; /* Para el fondo de ondas si se agrega */
+  overflow: hidden; /* Para ocultar las ondas que se salgan */
 }
 
-.footer h4 {
-  color: #fff;
-}
-
-.footer a {
-  color: #fff;
-}
-
-.footer-links {
-  margin-bottom: 20px;
-}
-
-.social-link {
-  display: flex;
-}
-
-.social-link a {
-  margin-right: 10px;
-}
-
-.footer-copy {
-  margin-top: 20px;
-}
-
-.footer-divider {
-  border-color: #fff;
-  margin: 20px 0;
-}
-
-.copyright {
-  color: #fff;
-  font-size: 14px;
-}
+/* Opcional: Agregar un fondo de ondas sutil (necesitarías un SVG o más CSS) */
+/* .footer::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: 0;
+  width: 100%;
+  height: 100px;
+  background: url('ruta/a/tu/onda.svg') repeat-x;
+  background-size: auto 100%;
+  opacity: 0.2;
+} */
 
 .footer_container {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 .footer-row {
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start; /* Alinea los bloques en la parte superior */
 }
 
 .footer-links {
-  width: 22%;
-  padding: 0 10px;
+  width: calc(25% - 20px);
+  margin-bottom: 40px; /* Aumenté el margen inferior */
+}
+
+.footer-links h4 {
+  font-size: 1.3em;
+  color: var(
+    --primary-color,
+    #673ab7
+  ); /* Usa el color primario si está definido */
+  margin-bottom: 1em;
+  font-weight: bold;
+  border-bottom: 3px solid var(--primary-color, #673ab7);
+  padding-bottom: 0.5em;
+  display: inline-block;
 }
 
 .footer-links ul {
@@ -59,21 +60,74 @@
   margin: 0;
 }
 
-.footer-links h4 {
-  font-size: 18px;
-  color: var(--primary-color);
-  margin-bottom: 15px;
-  font-weight: 500;
-  border-bottom: 2px solid var(--primary-color);
-  padding-bottom: 5px;
-  display: inline-table;
+.footer-links li {
+  margin-bottom: 0.8em;
 }
 
 .footer-links a {
-  color: var(--primary-color);
+  color: #ccc;
   text-decoration: none;
+  transition: color 0.15s ease-in-out, text-shadow 0.15s ease-in-out; /* Transiciones más rápidas */
+}
+
+.footer-links a:hover {
+  color: #fff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.9); /* Brillo más intenso */
 }
 
 .custom_text {
-  margin-top: 15px; 
+  margin-top: 2em;
+  color: #bbb;
+  font-size: 0.95em;
+}
+
+.social-link {
+  display: flex;
+  align-items: center;
+}
+
+.social-link a {
+  margin-right: 20px;
+  color: #fff;
+  font-size: 1.5em; /* Íconos un poco más grandes */
+  opacity: 0.8;
+  transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out; /* Transiciones más rápidas */
+}
+
+.social-link a:hover {
+  opacity: 1;
+  transform: scale(1.2); /* Un poco más grande al hacer hover */
+}
+
+.footer-copy {
+  margin-top: 50px;
+  padding-top: 25px;
+  border-top: 1px solid #4a148c;
+  text-align: center;
+}
+
+.copyright {
+  color: #aaa;
+  font-size: 0.9em;
+}
+
+/* Adaptación para pantallas más pequeñas */
+@media (max-width: 768px) {
+  .footer-row {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-links {
+    width: 100%;
+    margin-bottom: 30px;
+  }
+
+  .social-link {
+    justify-content: center;
+  }
+
+  .footer-links:last-child h4 {
+    margin-top: 1em; /* Ajusta el margen del título "Síguenos" */
+  }
 }
