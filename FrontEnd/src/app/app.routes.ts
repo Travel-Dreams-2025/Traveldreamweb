@@ -11,6 +11,9 @@ import { DestinosCartComponent } from './pages/destinos-cart/destinos-cart.compo
 import { DestinosDetailsComponent } from './pages/destinos-details/destinos-details.component';
 import { AuthGuard } from './interceptors/auth.guard';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { RecuperarPasswordComponent } from './pages/recuperar-password/recuperar-password.component';
+
+
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -24,5 +27,7 @@ export const routes: Routes = [
   { path: 'registro', component: RegistroComponent },
   { path: 'nosotros', component: NosotrosComponent },
   { path: 'nosotros/:id', component: ProfesionalComponent },
-  { path: '**', component: Pagina404Component }
+  { path: 'recuperar-password', loadComponent: () => import('./pages/recuperar-password/recuperar-password.component').then(m => m.RecuperarPasswordComponent) },
+  { path: '**', component: Pagina404Component },
+
 ];

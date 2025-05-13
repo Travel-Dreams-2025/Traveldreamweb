@@ -12,10 +12,60 @@ El objetivo principal del proyecto es ofrecer a los usuarios una experiencia de 
 
 ## Integrantes:
 
-Cantarino, Emmanuel  
-Cascallares, Facundo  
-Fernandez, Claudio Ranses  
-Soto Valenzuela, Juan Gabriel
+<dl>
+<br>
+        <table align="center">
+          <thead>
+            <tr>
+              <th>Apellido y Nombre</th>
+              <th>Usuario en GitHub</th>
+              <th>GitHub</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td> Fernandez, Claudio </td>
+              <td> ccrrff2014 </td>
+              <td>
+                <a href="https://github.com/ccrrff2014">
+                  <img src="https://img.shields.io/badge/GitHub-%F0%9F%94%97-s?style=social"/>
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td> Soto Valenzuela, Juan </td>
+              <td> vstecnic </td>
+              <td>
+                <a href="https://github.com/vstecnic">
+                  <img src="https://img.shields.io/badge/GitHub-%F0%9F%94%97-s?style=social"/>
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td> Cantarino, Emmanuel </td>
+              <td> MaxiCantarino </td>
+              <td>
+                <a href="https://github.com/MaxiCantarino">
+                  <img src="https://img.shields.io/badge/GitHub-%F0%9F%94%97-s?style=social"/>
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td> Cascallares, Facundo  </td>
+              <td> FacundoCascallares </td>
+              <td>
+                <a href="https://github.com/FacundoCascallares">
+                  <img src="https://img.shields.io/badge/GitHub-%F0%9F%94%97-s?style=social"/>
+                </a>
+              </td>
+            </tr>
+        </table>
+  </dd>
+  <dd>
+<dl>
+
+***
+
 
 ![travel_dreams_front](https://github.com/TravelDreams2024/ISPC2024/assets/45200064/ad03b552-ba52-49b8-9bb9-36955ba119d6)
 
