@@ -1,18 +1,22 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PasswordResetService {
+  private apiUrl = 'https://dreamtravel.pythonanywhere.com/api/accounts';
 
-  private apiUrl = 'https://dreamtravel.pythonanywhere.com/api/accounts/password-reset/';
+  constructor(private http: HttpClient) {}
 
-  constructor(private http: HttpClient) { }
-
-  // Metodo para solicitar reestablecimiento de contraseña
   requestPasswordReset(email: string): Observable<any> {
-    return this.http.post(this.apiUrl, { email });
+    return this.http.post(`${this.apiUrl}/password-reset/`, { email });
+  }
+
+  confirmPasswordReset(uid: string, token: string, new_password: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/password-reset-confirm/${uid}/${token}/`, {
+      new_password,
+    });
   }
 }
