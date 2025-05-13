@@ -8,7 +8,7 @@ import { Destino } from '../../models/destinos';
 import { AuthService } from '../../services/auth.service';
 import { AlertaComponent } from '../../alerta/alerta.component'; // Asegúrate que este path sea correcto
 // Importar operadores y tipos necesarios de RxJS
-import { forkJoin, Observable, of } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs'; // forkJoin no es necesario para la nueva lógica de agregar
 import { catchError, tap } from 'rxjs/operators';
 
 // Declarar bootstrap globalmente para acceder a la API de Bootstrap JS
@@ -93,67 +93,38 @@ export class DestinosComponent implements OnInit {
       const nombreDestino = this.destinoSeleccionado.nombre_Destino;
       // Guardar nombre para mensajes
 
-      // Crear un array de Observables llamando al servicio N veces
-      const llamadasAlCarrito$: Observable<any>[] = [];
-      for (let i = 0; i < cantidad; i++) {
-        llamadasAlCarrito$.push(
-          // Llamada al servicio que solo acepta 1 argumento (id)
-          this.carritoService.agregarCarrito(idDestino).pipe(
-            catchError(error => {
-              // Manejar error individual para que forkJoin no falle por completo
-              console.error(`Error al agregar unidad ${i + 1} de ${nombreDestino}`, error);
-              // Devolver un observable que emite un valor (p.ej., null o un objeto de error)
-              // para indicar fallo parcial pero permitir que forkJoin continúe.
-              return of({ success: false, error: error }); // O simplemente `of(null)` si no necesitas el detalle
-            })
+      // Determinar la fecha de salida. Como no hay un campo de entrada en este modal para la fecha,
+      // usaremos la fecha actual. Puedes ajustar esto si necesitas que el usuario la seleccione.
+      const fechaSalida = new Date().toISOString().split('T')[0]; // Formato 'YYYY-MM-DD'
 
-          )
-        );
-      }
+      // Realizar una única llamada al servicio con la cantidad y la fecha de salida
+      this.carritoService.agregarCarrito(idDestino, cantidad, fechaSalida).subscribe({
+        next: (response) => {
+          console.log('Destino agregado al carrito:', response);
+          let alertMessage = `${nombreDestino} (x${cantidad}) agregado(s) al carrito con éxito.`;
+          let alertType = 'success';
 
-      // Ejecutar todas las llamadas concurrentemente
-      if (llamadasAlCarrito$.length > 0) {
-        forkJoin(llamadasAlCarrito$).subscribe({
-          next: (results) => {
-            const exitosas = results.filter(res => res === null || (res && res.success !== false)).length;
-            const fallidas = cantidad - exitosas;
+          console.log('INTENTO: Cerrar modal y mostrar alerta.'); // Log de depuración
+          // Pasamos el mensaje y tipo de alerta al callback para mostrarla después de cerrar el modal
+          this.cerrarModal(() => {
+            console.log('CALLBACK: Modal cerrado. Procediendo a mostrar alerta.'); // Log de depuración
+            // Añadimos un pequeño timeout para dar tiempo al backdrop a desaparecer completamente.
+            setTimeout(() => {
+              console.log('TIMEOUT: Mostrando alerta.'); // Log de depuración
+              this.mostrarAlerta(alertMessage, alertType);
+            }, 100); // 100 ms de retraso, ajusta si es necesario
+          });
 
-            let alertMessage: string;
-            let alertType: string;
-
-            if (fallidas === 0) {
-              alertMessage = `${nombreDestino} (x${cantidad}) agregado(s) al carrito con éxito.`;
-              alertType = 'success';
-            } else {
-              alertMessage = `Se agregaron ${exitosas} de ${cantidad} unidades de ${nombreDestino}. Hubo ${fallidas} errores.`;
-              alertType = 'warning';
-            }
-
-            console.log('INTENTO: Cerrar modal y mostrar alerta.'); // Log de depuración
-            // Pasamos el mensaje y tipo de alerta al callback para mostrarla después de cerrar el modal
-            this.cerrarModal(() => {
-              console.log('CALLBACK: Modal cerrado. Procediendo a mostrar alerta.'); // Log de depuración
-              // Añadimos un pequeño timeout para dar tiempo al backdrop a desaparecer completamente.
-              setTimeout(() => {
-                console.log('TIMEOUT: Mostrando alerta.'); // Log de depuración
-                this.mostrarAlerta(alertMessage, alertType);
-              }, 100); // 100 ms de retraso, ajusta si es necesario
-            });
-
-            this.agregandoAlCarrito = false; // Habilitar botón
-          },
-          error: (err) => {
-            console.error('Error inesperado en forkJoin al agregar al carrito', err); // Log de depuración
-            this.mostrarAlerta(`Error general al intentar agregar ${nombreDestino}.`, 'danger');
-            this.agregandoAlCarrito = false;
-            // Habilitar botón
-             this.cerrarModal(); // Cerrar modal en caso de error general también
-          }
-        });
-      } else {
-        console.warn("Cantidad seleccionada es 0 o inválida."); // Log de depuración
-        this.agregandoAlCarrito = false; // Habilitar botón
-      }
+          this.agregandoAlCarrito = false; // Habilitar botón
+        },
+        error: (err) => {
+          console.error('Error al intentar agregar al carrito', err); // Log de depuración
+          this.mostrarAlerta(`Error al agregar ${nombreDestino} al carrito.`, 'danger');
+          this.agregandoAlCarrito = false;
+          // Habilitar botón
+          this.cerrarModal(); // Cerrar modal en caso de error
+        }
+      });
 
     } else {
       this.agregandoAlCarrito = false;
@@ -192,26 +163,26 @@ export class DestinosComponent implements OnInit {
         modalInstance.hide();
 
       } else {
-         console.warn('cerrarModal: No se encontró instancia de Bootstrap modal para #destinoModal.'); // Log de depuración
-         // Si no se encuentra la instancia, realizamos la limpieza manual de inmediato.
-         console.log('cerrarModal: No se encontró instancia, realizando limpieza manual inmediata.'); // Log de depuración
-         this.cleanBodyStyles();
-         this.removeModalBackdrop();
-         if (callback) {
+          console.warn('cerrarModal: No se encontró instancia de Bootstrap modal para #destinoModal.'); // Log de depuración
+          // Si no se encuentra la instancia, realizamos la limpieza manual de inmediato.
+          console.log('cerrarModal: No se encontró instancia, realizando limpieza manual inmediata.'); // Log de depuración
+          this.cleanBodyStyles();
+          this.removeModalBackdrop();
+          if (callback) {
             console.log('cerrarModal: Ejecutando callback inmediatamente (sin instancia).'); // Log de depuración
             callback();
-         }
+          }
       }
     } else {
-       console.warn('cerrarModal: Elemento modal con ID #destinoModal no encontrado.'); // Log de depuración
-       // Si el elemento modal no se encuentra, también limpiamos por si acaso.
-       console.log('cerrarModal: Elemento modal no encontrado, realizando limpieza manual inmediata.'); // Log de depuración
-       this.cleanBodyStyles();
-       this.removeModalBackdrop();
-       if (callback) {
-          console.log('cerrarModal: Ejecutando callback inmediatamente (sin elemento modal).'); // Log de depuración
-          callback();
-       }
+        console.warn('cerrarModal: Elemento modal con ID #destinoModal no encontrado.'); // Log de depuración
+        // Si el elemento modal no se encuentra, también limpiamos por si acaso.
+        console.log('cerrarModal: Elemento modal no encontrado, realizando limpieza manual inmediata.'); // Log de depuración
+        this.cleanBodyStyles();
+        this.removeModalBackdrop();
+        if (callback) {
+            console.log('cerrarModal: Ejecutando callback inmediatamente (sin elemento modal).'); // Log de depuración
+            callback();
+        }
     }
   }
 
@@ -222,11 +193,11 @@ export class DestinosComponent implements OnInit {
     if (document.body.style.overflow === 'hidden') {
       document.body.style.overflow = ''; // Restablecer al valor por defecto
     }
-     // Opcional: también resetear padding-right que Bootstrap usa para compensar la scrollbar
+      // Opcional: también resetear padding-right que Bootstrap usa para compensar la scrollbar
     if (document.body.style.paddingRight !== '') {
-       document.body.style.paddingRight = '';
+        document.body.style.paddingRight = '';
     }
-     console.log('cleanBodyStyles: Clase modal-open y estilo overflow del body limpiados.'); // Log de depuración
+      console.log('cleanBodyStyles: Clase modal-open y estilo overflow del body limpiados.'); // Log de depuración
   }
 
 
@@ -250,25 +221,25 @@ export class DestinosComponent implements OnInit {
   }
 
   showAlert(): void {
-    const toastElement = document.getElementById('liveToast'); 
+    const toastElement = document.getElementById('liveToast');
     if (toastElement && typeof bootstrap !== 'undefined' && typeof bootstrap.Toast !== 'undefined') {
       try {
           console.log('showAlert: Intentando mostrar Bootstrap Toast.'); // Log de depuración
           const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastElement);
-        toastBootstrap.show();
-           console.log('showAlert: Bootstrap Toast mostrado.'); // Log de depuración
+          toastBootstrap.show();
+          console.log('showAlert: Bootstrap Toast mostrado.'); // Log de depuración
       } catch (e) {
           console.error("showAlert: Error al mostrar el toast de Bootstrap:", e); // Log de depuración
           this.limpiarAlertaDespuesDeTiempo();
       }
     } else {
       console.warn('showAlert: Elemento Toast con ID "liveToast" no encontrado o Bootstrap Toast no disponible.'); // Log de depuración
-       this.limpiarAlertaDespuesDeTiempo();
+        this.limpiarAlertaDespuesDeTiempo();
     }
       setTimeout(() => {
-             console.log('showAlert: Timeout para limpiar estado de alerta.'); // Log de depuración
-             this.limpiarAlerta();
-     }, 6000);
+              console.log('showAlert: Timeout para limpiar estado de alerta.'); // Log de depuración
+              this.limpiarAlerta();
+      }, 6000);
   }
 
   limpiarAlerta(): void {
@@ -279,10 +250,10 @@ export class DestinosComponent implements OnInit {
   }
 
   limpiarAlertaDespuesDeTiempo(tiempo: number = 5000): void {
-     console.log(`limpiarAlertaDespuesDeTiempo: Programando limpieza de alerta en ${tiempo}ms.`); // Log de depuración
-     setTimeout(() => {
-       this.limpiarAlerta();
-     }, tiempo);
+      console.log(`limpiarAlertaDespuesDeTiempo: Programando limpieza de alerta en ${tiempo}ms.`); // Log de depuración
+      setTimeout(() => {
+        this.limpiarAlerta();
+      }, tiempo);
   }
 
 
