@@ -1,6 +1,106 @@
+/* Estilos para el contenedor del formulario - MÁS PEQUEÑO */
+.bg-light {
+  padding: 20px; /* Reducimos el padding */
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem; /* Reducimos el margin inferior */
+}
+
+.text-center h1 {
+  color: #333;
+  margin-bottom: 2rem; /* Reducimos el margin inferior */
+  font-weight: 700;
+  font-size: 2.2rem; /* Reducimos un poco el tamaño del título */
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.feature.bg-primary {
+  background-color: #d32788 !important;
+  width: 3rem;
+  height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-bottom: 1rem; /* Reducimos el margin inferior */
+}
+
+.feature.bg-primary i {
+  font-size: 1.5rem;
+}
+
+/* Estilos para los form-floating (inputs y textarea) - UN POCO MÁS PEQUEÑOS */
+.form-floating {
+  margin-bottom: 1rem; /* Reducimos el margin inferior */
+}
+
+.form-floating > .form-control {
+  padding: 1rem 0.75rem; /* Reducimos el padding vertical */
+  border: 1px solid #ced4da;
+  border-radius: 0.3rem;
+  font-size: 0.9rem; /* Reducimos el tamaño de la fuente */
+  color: #495057;
+}
+
+.form-floating > label {
+  color: #6c757d;
+  font-size: 0.9rem; /* Reducimos el tamaño de la fuente de la etiqueta */
+}
+
+.form-floating > .form-control:focus {
+  border-color: #d32788;
+  box-shadow: 0 0 0 0.2rem rgba(211, 39, 136, 0.25);
+}
+
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+  opacity: 0.65;
+  transform: translate(0, -0.5rem) scale(0.8); /* Ajustamos la posición de la etiqueta */
+}
+
+.form-floating > textarea.form-control {
+  height: 10rem !important; /* Mantenemos la altura del textarea */
+}
+
+.invalid-feedback {
+  color: #dc3545;
+  font-size: 0.8rem; /* Reducimos el tamaño de la fuente del feedback */
+  margin-top: 0.2rem; /* Reducimos el margin superior */
+}
+
+/* Estilos para el botón personalizado */
+.d-grid {
+  margin-top: 1.5rem; /* Reducimos el margin superior */
+}
+
 .btn-custom {
-    background: #D32788;
-    border-color:#D32788;
-    color: white;
-  }
-  
+  background: #d32788;
+  border: none;
+  color: white;
+  padding: 12px 24px; /* Reducimos el padding */
+  border-radius: 8px;
+  font-size: 1rem; /* Reducimos el tamaño de la fuente */
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease,
+    transform 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.btn-custom:hover {
+  background-color: #b82077;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn-custom:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(211, 39, 136, 0.5);
+}
+
+.btn-custom:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
