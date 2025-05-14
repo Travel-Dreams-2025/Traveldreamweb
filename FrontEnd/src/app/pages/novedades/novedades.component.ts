@@ -22,7 +22,7 @@ import { FooterComponent } from '../../shared/footer/footer.component';
       
       <div class="video-container">
         <iframe 
-          src="https://drive.google.com/file/d/ID_DEL_VIDEO/preview" 
+          src="https://drive.google.com/file/d/1zu7xG1YgxIgoQMCoijuAz-1s5wDniDuP/view?usp=sharing" 
           width="100%" 
           height="480" 
           allow="autoplay"
