@@ -14,12 +14,9 @@ import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { RecuperarPasswordComponent } from './pages/recuperar-password/recuperar-password.component';
 import { NuevoPasswordComponent } from './pages/auth/nuevo-password/nuevo-password.component';
 
-
-
-
 export const routes: Routes = [
   { path: '', component: HomeComponent },
-  { path: 'Home', component: HomeComponent },
+  { path: 'home', component: HomeComponent },
   { path: 'destinos', component: DestinosComponent },
   { path: 'destinos/:id', component: DestinosDetailsComponent },
   { path: 'destinos-cart', component: DestinosCartComponent, canActivate: [AuthGuard] },
@@ -29,10 +26,10 @@ export const routes: Routes = [
   { path: 'registro', component: RegistroComponent },
   { path: 'nosotros', component: NosotrosComponent },
   { path: 'nosotros/:id', component: ProfesionalComponent },
-  { path: 'recuperar-password', loadComponent: () => import('./pages/recuperar-password/recuperar-password.component').then(m => m.RecuperarPasswordComponent) },
+  { path: 'recuperar-password', component: RecuperarPasswordComponent },
   { path: 'new-password', component: NuevoPasswordComponent },
-  { path: '', redirectTo: 'recuperar-password', pathMatch: 'full' },
-  { path: '**', redirectTo: 'recuperar-password' },
-  { path: '**', component: Pagina404Component },
-
+  { path: 'novedades', loadComponent: () => import('./pages/novedades/novedades.component').then(m => m.NovedadesComponent) },
+  
+  // IMPORTANTE: La ruta comodín (**) debe ser la ÚLTIMA
+  { path: '**', component: Pagina404Component }
 ];
