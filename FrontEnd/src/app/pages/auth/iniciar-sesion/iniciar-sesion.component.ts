@@ -4,12 +4,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
 import { Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-iniciar-sesion',
   templateUrl: './iniciar-sesion.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ReactiveFormsModule, RouterModule]
 })
 export class IniciarSesionComponent {
   formGroup: FormGroup;
@@ -24,15 +25,14 @@ export class IniciarSesionComponent {
 
   onSubmit() {
     if (this.formGroup.valid) {
-      console.log('Form data:', this.formGroup.value); // Log para verificar datos del formulario
+      console.log('Form data:', this.formGroup.value);
       this.authService.login(this.formGroup.value).subscribe(
         response => {
-          console.log('Login successful:', response); // Log para verificar respuesta exitosa
+          console.log('Login successful:', response); 
           this.router.navigate(['/']);
         },
         error => {
-          console.error('Login failed:', error); // Log para verificar errores
-          // Manejar errores de login
+          console.error('Login failed:', error); 
         }
       );
     } else {
