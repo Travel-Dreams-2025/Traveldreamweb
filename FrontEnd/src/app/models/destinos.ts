@@ -4,8 +4,10 @@ export interface Destino {
   descripcion: string;
   image: string;
   precio_Destino: number;
-  fecha_salida: Date;
+  fecha_salida: string | Date;
   cantidad_Disponible: number;
-  id_metodoPago: number;
-  id_categoria: number;
+  // Nuevas propiedades opcionales
+  estaVigente?: boolean;
+  tieneCupo?: boolean;
+  mostrarSoldOut?: boolean;
 }

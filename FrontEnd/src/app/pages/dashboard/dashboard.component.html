@@ -94,6 +94,61 @@
       <div class="no-purchases" *ngIf="compras.length === 0 && !loading">
         <p>No tienes compras registradas</p>
       </div>
+
+      <!-- Añade esta sección para el historial de compras -->
+<div class="historial-section">
+  <h2>Historial de Compras</h2>
+  
+  <div *ngIf="compras.length === 0" class="no-compras">
+    <p>No tienes compras registradas</p>
+  </div>
+
+  <div *ngFor="let compra of compras" class="compra-card">
+    <div class="compra-header">
+      <span class="fecha">{{ compra.fechaFormateada || formatearFecha(compra.fecha_creacion) }}</span>
+      <span class="total">{{ compra.totalFormateado || formatearMoneda(compra.total) }}</span>
+    </div>
+    
+    <div class="compra-body">
+      <img [src]="compra.destino.image" alt="{{ compra.destino.nombre_Destino }}">
+      
+      <div class="compra-info">
+        <h4>{{ compra.destino.nombre_Destino }}</h4>
+        <p>Cantidad: {{ compra.cantidad }}</p>
+        <p>Método de pago: {{ compra.metodo_pago.nombrePago }}</p>
+        <p *ngIf="compra.esLocal" class="local-badge">Compra local</p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Añade esto en tu template -->
+<section class="historial-section">
+  <h2>Historial de Compras</h2>
+  
+  <div *ngIf="compras.length === 0" class="no-compras">
+    <p>No tienes compras registradas</p>
+  </div>
+
+  <div *ngFor="let compra of compras" class="compra-card" [class.local]="compra.esLocal">
+    <div class="compra-header">
+      <span class="fecha">{{ compra.fechaFormateada }}</span>
+      <span class="total">{{ compra.totalFormateado }}</span>
+    </div>
+    
+    <div class="compra-body">
+      <img [src]="compra.destino.image" [alt]="compra.destino.nombre_Destino">
+      
+      <div class="compra-info">
+        <h4>{{ compra.destino.nombre_Destino }}</h4>
+        <div class="compra-details">
+          <span>Cantidad: {{ compra.cantidad }}</span>
+          <span>Método: {{ compra.metodo_pago.nombrePago }}</span>
+        </div>
+        <span *ngIf="compra.esLocal" class="local-badge">Guardado localmente</span>
+      </div>
+    </div>
+  </div>
+</section>
     </ng-template>
   </ng-template>
 </div>

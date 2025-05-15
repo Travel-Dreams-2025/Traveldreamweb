@@ -7,6 +7,7 @@ import { AuthGuard } from './interceptors/auth.guard';
 import { CarritoService } from './services/carrito.service';
 import { AlertaComponent } from './alerta/alerta.component';
 import { UserService } from './services/user.service';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 
 
 export const appConfig: ApplicationConfig = {
@@ -21,6 +22,6 @@ export const appConfig: ApplicationConfig = {
     AlertaComponent,
     AuthGuard,
     CarritoService,
-    UserService
+    UserService, provideAnimationsAsync()
   ]
 };
