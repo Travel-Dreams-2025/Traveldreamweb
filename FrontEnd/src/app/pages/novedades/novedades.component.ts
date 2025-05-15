@@ -2,12 +2,11 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HeaderComponent } from '../../shared/header/header.component';
-import { FooterComponent } from '../../shared/footer/footer.component';
 
 @Component({
   selector: 'app-novedades',
   standalone: true,
-  imports: [CommonModule, RouterModule, HeaderComponent, FooterComponent],
+  imports: [CommonModule, RouterModule, HeaderComponent],
   template: `
     <app-header></app-header>
     
@@ -22,17 +21,15 @@ import { FooterComponent } from '../../shared/footer/footer.component';
       
       <div class="video-container">
         <iframe 
-          src="https://drive.google.com/file/d/ID_DEL_VIDEO/preview" 
+          src="https://www.youtube.com/embed/DyPIvu6c4k0" 
           width="100%" 
           height="480" 
-          allow="autoplay"
           frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
           allowfullscreen>
         </iframe>
       </div>
     </main>
-    
-    <app-footer></app-footer>
   `,
   styles: [`
     .video-container {
