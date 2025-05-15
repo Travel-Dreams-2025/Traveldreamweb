@@ -155,7 +155,7 @@ export class DestinosCartComponent implements OnInit {
     // Opcional: Deshabilitar botones de cantidad o mostrar un spinner mientras actualiza
     // item.updatingQuantity = true; // You can add this property to the item
 
-    this.carritoService.actualizarItem(item.id_compra, nuevaCantidad).subscribe({
+    this.carritoService.actualizarCantidad(item.id_compra, nuevaCantidad).subscribe({
       next: () => {
         item.cantidad = nuevaCantidad; // Actualiza la cantidad localmente
         this.calcularTotal(); // Recalcula el total del carrito

@@ -1,153 +1,207 @@
-.custom-btn {
-    background-color: #240B5C; 
-    border-color: #240B5C;
-color: white;
-    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out; /* Transición suave */
-}
-.custom-btn:hover {
-    background-color: #3a1a8c; /* Un tono ligeramente más claro o diferente para el hover */
-    border-color: #3a1a8c;
+/* Contenedor principal de las cards */
+.destinos-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px;
 }
 
-.card {
-    flex: 1 1 auto; 
-    display: flex; 
-    flex-direction: column; 
-    border: none; /* Quitar borde por defecto si se añade sombra */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Sombra sutil inicial */
-    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out; /* Transición suave para sombra y transform */
+/* Estilos base de la tarjeta de destino */
+.destino-card {
+  position: relative;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden; /* Para que la imagen no sobresalga */
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* --- Nuevo Estilo para Hover en Card --- */
-.product-card-hover:hover {
-    box-shadow: 0 5px 15px rgba(36, 11, 92, 0.2); /* Sombra más pronunciada y con color base */
-    transform: translateY(-5px); /* Elevar ligeramente la card */
-    cursor: pointer; /* Cambiar cursor a puntero */
+/* Contenedor de la imagen */
+.destino-imagen-container {
+  position: relative;
+  width: 100%;
+  height: 160px; /* Altura fija para todas las imágenes */
+  overflow: hidden;
 }
-/* --- Fin Estilo Hover --- */
 
-.card-body {
-    flex-grow: 1; 
-    display: flex; 
-    flex-direction: column; 
+/* Imagen del destino */
+.destino-imagen {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Asegura que la imagen cubra el espacio */
+  transition: transform 0.3s ease;
+}
+
+/* Efecto hover para la imagen */
+.destino-card:not(.sold-out):hover .destino-imagen {
+  transform: scale(1.05);
+}
+
+/* Badge de SOLD OUT */
+.sold-out-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #dc3545;
+  color: white;
+  font-size: 0.8rem;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 2;
+}
+
+/* Contenido de la card */
+.destino-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+}
+
+.destino-header {
+  margin-bottom: 10px;
+}
+
+.destino-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.destino-body {
+  flex-grow: 1;
+  margin-bottom: 10px;
+}
+
+.destino-precio {
+  font-weight: bold;
+  color: #2a6496;
+  font-size: 1.1rem;
+  margin: 5px 0;
+}
+
+.destino-fecha, .destino-cupos {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.destino-actions {
+  margin-top: auto;
+}
+
+/* Estilos para tarjetas SIN CUPO */
+.destino-card.sold-out {
+  opacity: 0.8;
+  background-color: #f8f9fa;
+}
+
+.destino-card.sold-out .destino-imagen {
+  filter: grayscale(70%) brightness(0.9);
+}
+
+/* Texto "Sold Out" superpuesto */
+.destino-card.sold-out::after {
+  content: "SOLD OUT";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(220, 53, 69, 0.9);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Adaptación para móviles */
+@media (max-width: 768px) {
+  .destinos-container {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 15px;
+    padding: 10px;
   }
-
-  .precio {
-    font-weight: bold;
-    color: #240B5C; 
+  
+  .destino-imagen-container {
+    height: 140px;
   }
-
-  .bordered-btn {
-    border: 2px solid #240B5C; 
-    padding: 5px 10px; 
-    border-radius: 5px; 
-    color: #240B5C;
-    font-weight: bold;
-    background-color: transparent; 
-    transition: background-color 0.2s, color 0.2s; 
-}
-
-.bordered-btn:hover {
-    background-color: #240B5C; 
-    color: white; 
+  
+  .destino-header h3 {
+    font-size: 1.1rem;
   }
-
-  .card-title {
-    color: #240B5C !important; /* Usar !important con precaución */
-    font-weight: bold;
+  
+  .destino-card.sold-out::after {
+    font-size: 1rem;
+    padding: 5px 15px;
   }
-
-  .custom-title {
-    color: #240B5C;
-    font-weight: bold;
-    text-align: center;
-    padding-top: 20px;
-    margin-bottom: 20px; 
 }
-
-.card-img-top {
-    width: 100%;
-    height: 200px; 
-    object-fit: cover; 
-}
-
-/* Estilos para el Modal */
+/* Estilos para el modal */
 .modal-content {
-    border-radius: 0.5rem; 
-    border: none; /* Quitar borde si se usa sombra */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  border-radius: 10px;
 }
 
 .modal-header {
-    border-bottom: 1px solid #dee2e6; 
-    background-color: #f8f9fa; 
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
 }
 
-.modal-image { /* Clase añadida a la imagen del modal */
-   max-height: 350px; /* Ajustar altura máxima si es necesario */
-   width: 100%;
-    object-fit: cover;
-   border-radius: 0.25rem; /* Bordes redondeados suaves */
+.modal-title {
+  font-weight: 600;
+  color: #2a6496;
 }
 
-.modal-body .precio {
-margin-bottom: 0; /* Ajustado, el espacio ahora lo da el contenedor flex */
+.modal-body {
+  padding: 1.5rem;
 }
 
-.modal-dialog.modal-lg {
-    max-width: 800px; 
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
 }
 
-/* Estilos para Controles de Cantidad */
-.quantity-control {
-  max-width: 130px; /* Ancho máximo para el control */
-}
-.quantity-control .form-control {
-  background-color: #fff; /* Fondo blanco para el input readonly */
-  border-left: none;
-  border-right: none;
-}
-.quantity-control .btn {
-  z-index: 1; /* Asegurar que los botones estén sobre el input */
+/* Selector de cantidad */
+.cantidad-selector .input-group {
+  max-width: 150px;
+  margin: 0 auto;
 }
 
-/* Estilos responsivos */
-.row {
-    display: flex;
-    flex-wrap: wrap;
+.cantidad-selector .form-control {
+  font-weight: bold;
 }
 
-.d-flex.align-items-stretch {
-    display: flex;
-    align-items: stretch;
+/* Estilos para los botones del modal */
+.btn-primary {
+  background-color: #2a6496;
+  border-color: #2a6496;
 }
 
-@media (max-width: 768px) {
-    .card-img-top {
-        height: 180px;
-    }
-    .modal-image {
-        max-height: 300px;
-    }
+.btn-primary:hover {
+  background-color: #1d4b7a;
+  border-color: #1d4b7a;
 }
 
-@media (max-width: 576px) {
-    .card-img-top {
-        height: 150px;
-    }
-     .modal-dialog {
-        margin: 0.5rem;
-    }
-.modal-body .row > div {
-        margin-bottom: 1rem;
-    }
-     .modal-body .row > div:last-child {
-        margin-bottom: 0; /* Quitar margen inferior al último elemento en vista móvil */
-    }
-.modal-image {
-        max-height: 250px;
-    }
-    .quantity-control {
-      max-width: 120px; /* Ligeramente más pequeño en móviles */
-    }
-  }
+/* Estilos para la alerta toast */
+.toast {
+  max-width: 350px;
+}
+
+.bg-success {
+  background-color: #28a745 !important;
+}
+
+.bg-danger {
+  background-color: #dc3545 !important;
+}
