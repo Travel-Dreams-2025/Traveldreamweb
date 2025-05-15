@@ -1,4 +1,3 @@
-// src/app/pages/auth/iniciar-sesion/iniciar-sesion.component.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
@@ -10,10 +9,12 @@ import { RouterModule } from '@angular/router';
   selector: 'app-iniciar-sesion',
   templateUrl: './iniciar-sesion.component.html',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ReactiveFormsModule, RouterModule]
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterModule]
 })
 export class IniciarSesionComponent {
   formGroup: FormGroup;
+  loginError: string = '';
+  enviado: boolean = false;
 
   constructor(private fb: FormBuilder, private authService: AuthService, private router: Router) {
     this.formGroup = this.fb.group({
@@ -21,22 +22,31 @@ export class IniciarSesionComponent {
       password: ['', Validators.required],
       rememberMe: [false]
     });
+
+    this.formGroup.get('password')?.valueChanges.subscribe(() => {
+      this.loginError = '';
+    });
   }
 
-  onSubmit() {
-    if (this.formGroup.valid) {
-      console.log('Form data:', this.formGroup.value);
-      this.authService.login(this.formGroup.value).subscribe(
-        response => {
-          console.log('Login successful:', response); 
-          this.router.navigate(['/']);
-        },
-        error => {
-          console.error('Login failed:', error); 
-        }
-      );
-    } else {
-      console.log('Form is invalid');
-    }
+onSubmit() {
+  if (this.formGroup.valid) {
+    this.enviado = true;
+    this.authService.login(this.formGroup.value).subscribe(
+      response => {
+        console.log('Login successful:', response);
+        this.enviado = false;
+        this.router.navigate(['/']);
+      },
+      error => {
+        console.error('Login failed:', error);
+        this.formGroup.get('password')?.reset();
+        this.formGroup.get('password')?.markAsTouched();
+        this.loginError = 'Email o contraseña incorrectos.';
+        this.enviado = false;
+      }
+    );
+  } else {
+    console.log('Form is invalid');
   }
+}
 }
