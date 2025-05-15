@@ -97,7 +97,7 @@
         <button type="button" 
                 class="btn btn-primary" 
                 (click)="agregarAlCarrito()"
-                [disabled]="!destinoSeleccionado || destinoSeleccionado?.mostrarSoldOut || agregandoAlCarrito">
+                [disabled]="!destinoSeleccionado || destinoSeleccionado.mostrarSoldOut || agregandoAlCarrito">
           <span *ngIf="!agregandoAlCarrito">
             <i class="fas fa-shopping-cart"></i> Agregar al carrito
           </span>

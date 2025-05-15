@@ -125,7 +125,11 @@ export class DestinosComponent implements OnInit {
     const nombreDestino = this.destinoSeleccionado.nombre_Destino;
     const fechaSalida = new Date(this.destinoSeleccionado.fecha_salida).toISOString().split('T')[0];
 
-    this.carritoService.agregarCarrito(idDestino, cantidad, fechaSalida).subscribe({
+    this.carritoService.agregarAlCarrito({
+      id_destino: idDestino,
+      cantidad: cantidad,
+      fecha_salida: fechaSalida
+    }).subscribe({
       next: (response) => {
         this.mostrarAlerta(`${nombreDestino} (x${cantidad}) agregado al carrito`, 'success');
         this.cerrarModal();

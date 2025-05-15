@@ -5,6 +5,9 @@ import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user.service';
 import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
+import { CarritoService } from '../../services/carrito.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -14,13 +17,11 @@ import { AuthService } from '../../services/auth.service';
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  // Datos para imágenes del header
   images = [
     { src: 'assets/img/logo.svg', alt: 'Logo', height: 40 },
     { src: 'assets/img/user.svg', alt: 'Foto de Usuario', height: 40 }
   ];
 
-  // Variables de estado
   compras: any[] = [];
   usuario: any = null;
   usuarioEditado: any = {};
@@ -34,7 +35,9 @@ export class DashboardComponent implements OnInit {
   constructor(
     private userService: UserService,
     private profileService: ProfileService,
-    private authService: AuthService
+    private authService: AuthService,
+    private carritoService: CarritoService,
+    private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
@@ -43,7 +46,7 @@ export class DashboardComponent implements OnInit {
 
   private cargarDatos(): void {
     this.obtenerPerfil();
-    this.listarCompras();
+    this.cargarHistorialCompleto();
   }
 
   obtenerPerfil(): void {
@@ -61,6 +64,24 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private cargarHistorialCompleto(): void {
+    forkJoin({
+      comprasBackend: this.userService.listarCompras(),
+      historialLocal: this.carritoService.obtenerHistorial()
+    }).subscribe({
+      next: ({comprasBackend, historialLocal}) => {
+        this.compras = [
+          ...this.mapearCompras(comprasBackend || []),
+          ...this.mapearHistorialLocal(historialLocal || [])
+        ];
+      },
+      error: (error) => {
+        console.error('Error al cargar historial:', error);
+        this.compras = this.mapearHistorialLocal(this.carritoService.obtenerHistorial() || []);
+      }
+    });
+  }
+
   private mapearUsuario(usuario: any): any {
     return {
       first_name: usuario.first_name,
@@ -74,6 +95,69 @@ export class DashboardComponent implements OnInit {
     };
   }
 
+  private mapearCompras(compras: any[]): any[] {
+    return compras.map(compra => ({
+      ...compra,
+      fechaFormateada: this.formatearFecha(compra.fecha_creacion),
+      metodoPago: compra.id_metodoPago?.nombrePago || 'No especificado',
+      totalFormateado: this.formatearMoneda(compra.total),
+      esLocal: false
+    }));
+  }
+
+  private mapearHistorialLocal(historial: any): any[] {
+    if (!historial || !Array.isArray(historial)) return [];
+    
+    return historial.map(compra => {
+      const primerItem = compra.items[0] || {};
+      const total = compra.items.reduce((sum: number, item: any) => {
+        return sum + ((item.precio_Destino || 0) * (item.cantidad || 1));
+      }, 0);
+
+      return {
+        id_compra: compra.fecha,
+        destino: {
+          nombre_Destino: compra.items.map((i: any) => i.nombre_Destino || 'Destino').join(', '),
+          image: primerItem.image || 'assets/img/default-trip.jpg'
+        },
+        cantidad: compra.items.reduce((sum: number, item: any) => sum + (item.cantidad || 1), 0),
+        total: total,
+        fecha_creacion: compra.fecha,
+        fechaFormateada: this.formatearFecha(compra.fecha),
+        metodo_pago: { 
+          nombrePago: compra.metodoPagoId ? `Método ${compra.metodoPagoId}` : 'No especificado' 
+        },
+        totalFormateado: this.formatearMoneda(total),
+        esLocal: true
+      };
+    });
+  }
+
+  formatearFecha(fecha: string | Date): string {
+    if (!fecha) return 'Fecha no disponible';
+    
+    try {
+      const fechaObj = typeof fecha === 'string' ? new Date(fecha) : fecha;
+      return fechaObj.toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      console.error('Error al formatear fecha:', e);
+      return typeof fecha === 'string' ? fecha : 'Fecha inválida';
+    }
+  }
+
+  formatearMoneda(monto: number): string {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS'
+    }).format(monto || 0);
+  }
+
   private manejarErrorPerfil(error: any): void {
     console.error('Error al obtener perfil:', error);
     this.error = 'Error al cargar el perfil. Por favor, intenta nuevamente.';
@@ -81,7 +165,6 @@ export class DashboardComponent implements OnInit {
     
     if (error.status === 401) {
       this.authService.logout();
-      // Redirigir a login si es necesario
     }
   }
 
@@ -107,6 +190,7 @@ export class DashboardComponent implements OnInit {
         this.actualizarUsuarioLocal();
         this.editMode = false;
         this.loadingSave = false;
+        this.snackBar.open('Perfil actualizado con éxito', 'Cerrar', { duration: 3000 });
       },
       error: (error) => {
         this.manejarErrorActualizacion(error);
@@ -146,9 +230,10 @@ export class DashboardComponent implements OnInit {
     this.loadingSave = false;
   }
 
-  onFileSelected(event: any): void {
-    this.selectedFile = event.target.files[0];
-    if (this.selectedFile) {
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
       this.subirImagenPerfil();
     }
   }
@@ -157,59 +242,20 @@ export class DashboardComponent implements OnInit {
     if (!this.selectedFile) return;
 
     this.loadingImage = true;
-    // Implementar lógica de subida de imagen aquí
-    console.log('Subiendo imagen:', this.selectedFile.name);
-    // Ejemplo:
-    // this.profileService.uploadProfileImage(this.selectedFile).subscribe(...);
-    this.loadingImage = false;
-  }
-
-  listarCompras(): void {
-    this.userService.listarCompras().subscribe({
-      next: (compras: any[]) => {
-        this.compras = this.mapearCompras(compras);
+    
+    this.profileService.uploadProfileImage(this.selectedFile).subscribe({
+      next: (response: any) => {
+        if (this.usuario) {
+          this.usuario.image = response.imageUrl;
+        }
+        this.snackBar.open('Imagen de perfil actualizada', 'Cerrar', { duration: 3000 });
+        this.loadingImage = false;
       },
-      error: (error: any) => {
-        this.manejarErrorCompras(error);
+      error: (error) => {
+        console.error('Error al subir imagen:', error);
+        this.snackBar.open('Error al actualizar la imagen', 'Cerrar', { duration: 3000 });
+        this.loadingImage = false;
       }
     });
-  }
-
-  private mapearCompras(compras: any[]): any[] {
-    return compras.map(compra => ({
-      ...compra,
-      fechaFormateada: this.formatearFecha(compra.fecha_creacion),
-      metodoPago: compra.id_metodoPago?.nombrePago || 'No especificado',
-      totalFormateado: this.formatearMoneda(compra.total)
-    }));
-  }
-
-  private manejarErrorCompras(error: any): void {
-    console.error('Error al cargar compras:', error);
-    this.error = 'Error al cargar el historial de compras.';
-  }
-
-  private formatearFecha(fecha: string): string {
-    if (!fecha) return 'Fecha no disponible';
-    
-    try {
-      return new Date(fecha).toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      console.error('Error al formatear fecha:', e);
-      return fecha;
-    }
-  }
-
-  private formatearMoneda(monto: number): string {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
-    }).format(monto);
   }
 }
