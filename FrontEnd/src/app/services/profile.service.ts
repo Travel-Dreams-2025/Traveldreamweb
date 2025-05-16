@@ -9,7 +9,6 @@ import { AuthService } from './auth.service';
 export class ProfileService {
   private apiUrl = 'https://dreamtravel.pythonanywhere.com/api/v1/profiles/me/';
   private updateUrl = `${this.apiUrl}update/`;
-  private uploadImageUrl = `${this.apiUrl}upload-image/`; // Endpoint para subir imágenes
 
   constructor(
     private http: HttpClient,
@@ -51,12 +50,14 @@ export class ProfileService {
     dni: string;
     address: string;
   }): Observable<any> {
+    // Usamos directamente el endpoint correcto para actualización
     return this.http.patch(
       this.updateUrl,
       profileData,
       { headers: this.getAuthHeaders() }
     ).pipe(
-      catchError((error: HttpErrorResponse) => {
+      catchError((error) => {
+        // Si PATCH falla, probamos con PUT (por si el backend lo espera)
         if (error.status === 405) {
           return this.http.put(
             this.updateUrl,
@@ -90,7 +91,8 @@ export class ProfileService {
         })
       }
     ).pipe(
-      catchError((error: HttpErrorResponse) => {
+      catchError((error) => {
+        // Si POST con FormData falla, probamos PUT con FormData
         if (error.status === 405) {
           return this.http.put(
             this.apiUrl,
@@ -100,37 +102,6 @@ export class ProfileService {
                 'Authorization': `Bearer ${this.authService.getToken()}`
               })
             }
-          );
-        }
-        return this.handleError(error);
-      })
-    );
-  }
-
-  // Nuevo método para subir imágenes de perfil
-  uploadProfileImage(file: File): Observable<any> {
-    const formData = new FormData();
-    formData.append('image', file, file.name);
-
-    // Nota: No establecemos Content-Type, el navegador lo hará automáticamente con el boundary correcto
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${this.authService.getToken()}`
-    });
-
-    return this.http.post(
-      this.uploadImageUrl,
-      formData,
-      { headers }
-    ).pipe(
-      catchError((error: HttpErrorResponse) => {
-        // Si POST falla, intentamos con PUT (por si el backend lo requiere)
-        if (error.status === 405) {
-          return this.http.put(
-            this.uploadImageUrl,
-            formData,
-            { headers }
-          ).pipe(
-            catchError(this.handleError)
           );
         }
         return this.handleError(error);
