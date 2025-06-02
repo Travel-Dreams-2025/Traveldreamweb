@@ -27,7 +27,7 @@ export const routes: Routes = [
   { path: 'nosotros', component: NosotrosComponent },
   { path: 'nosotros/:id', component: ProfesionalComponent },
   { path: 'recuperar-password', component: RecuperarPasswordComponent },
-  { path: 'new-password', component: NuevoPasswordComponent },
+  { path: 'new-password/:uid/:token', component: NuevoPasswordComponent },
   { path: 'novedades', loadComponent: () => import('./pages/novedades/novedades.component').then(m => m.NovedadesComponent) },
   
   // IMPORTANTE: La ruta comodín (**) debe ser la ÚLTIMA

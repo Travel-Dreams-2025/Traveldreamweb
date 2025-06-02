@@ -32,8 +32,8 @@ export class NuevoPasswordComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.uid = this.route.snapshot.queryParamMap.get('uid') || '';
-    this.token = this.route.snapshot.queryParamMap.get('token') || '';
+    this.uid = this.route.snapshot.paramMap.get('uid') || '';
+    this.token = this.route.snapshot.paramMap.get('token') || '';
     console.log('UID:', this.uid, 'Token:', this.token);
   }
 
