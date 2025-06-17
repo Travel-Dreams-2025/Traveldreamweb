@@ -6,7 +6,7 @@ import { Observable, catchError, throwError } from 'rxjs';
   providedIn: 'root',
 })
 export class NosotrosService {
-  private url: string = 'https://dreamtravel.pythonanywhere.com/api/v1/nosotros/';
+  private url: string = 'https://dreamtravelmp.pythonanywhere.com/api/v1/nosotros/';
 
   constructor(private http: HttpClient) {}
 

@@ -1,0 +1,4 @@
+<div *ngIf="currentMessage" [ngClass]="getMessageClass()" role="alert" class="message-container">
+  {{ currentMessage.text }}
+  <button type="button" class="btn-close" aria-label="Close" (click)="closeMessage()"></button>
+</div>

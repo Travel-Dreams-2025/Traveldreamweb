@@ -1,26 +1,28 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user.service';
 import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
+import { CarritoService } from '../../services/carrito.service';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, FormsModule],
+  imports: [RouterOutlet, CommonModule, FormsModule, MatSnackBarModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit {
-  // Datos para imágenes del header
   images = [
     { src: 'assets/img/logo.svg', alt: 'Logo', height: 40 },
     { src: 'assets/img/user.svg', alt: 'Foto de Usuario', height: 40 }
   ];
 
-  // Variables de estado
   compras: any[] = [];
   usuario: any = null;
   usuarioEditado: any = {};
@@ -34,7 +36,10 @@ export class DashboardComponent implements OnInit {
   constructor(
     private userService: UserService,
     private profileService: ProfileService,
-    private authService: AuthService
+    private authService: AuthService,
+    private carritoService: CarritoService,
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -43,7 +48,7 @@ export class DashboardComponent implements OnInit {
 
   private cargarDatos(): void {
     this.obtenerPerfil();
-    this.listarCompras();
+    this.cargarHistorialCompleto();
   }
 
   obtenerPerfil(): void {
@@ -61,17 +66,118 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private cargarHistorialCompleto(): void {
+    const historialLocal = this.carritoService.obtenerHistorialLocal();
+
+    forkJoin({
+      comprasBackend: this.userService.listarCompras().pipe(
+        catchError(err => {
+          console.error('Error al listar compras del backend:', err);
+          return of([]);
+        })
+      )
+    }).subscribe({
+      next: ({comprasBackend}) => {
+        this.compras = [
+          ...this.mapearCompras(comprasBackend || []),
+          ...this.mapearHistorialLocal(historialLocal || [])
+        ];
+      },
+      error: (error: any) => {
+        console.error('Error al cargar historial completo:', error);
+        this.compras = this.mapearHistorialLocal(this.carritoService.obtenerHistorialLocal() || []);
+        this.snackBar.open('Error al cargar historial desde el servidor. Mostrando historial local.', 'Cerrar', { duration: 5000 });
+      }
+    });
+  }
+
   private mapearUsuario(usuario: any): any {
+    const imageUrl = usuario.image 
+      ? usuario.image 
+      : 'assets/img/A01_avatar_mujer.png';
+
     return {
       first_name: usuario.first_name,
       last_name: usuario.last_name,
-      image: usuario.image 
-        ? 'https://dreamtravel.pythonanywhere.com' + usuario.image 
-        : 'assets/img/A01_avatar_mujer.png',
+      image: imageUrl,
       telephone: usuario.telephone || 'No proporcionado',
       address: usuario.address || 'No proporcionada',
       dni: usuario.dni || 'No proporcionado'
     };
+  }
+
+  private mapearCompras(compras: any[]): any[] {
+    const apiBaseUrlForDestinos = 'https://dreamtravelmp.pythonanywhere.com'; 
+
+    return compras.map(compra => ({
+      ...compra,
+      fechaFormateada: this.formatearFecha(compra.fecha_compra),
+      nombre_destino: compra.id_destino?.nombre_Destino || 'Destino Desconocido',
+      destino: {
+        image: compra.id_destino?.image
+          ? apiBaseUrlForDestinos + compra.id_destino.image // Usamos la URL base de PythonAnywhere
+          : 'assets/img/default-trip.jpg',
+        nombre_Destino: compra.id_destino?.nombre_Destino || 'Destino Desconocido'
+      },
+      metodo_pago: {
+        nombrePago: compra.id_metodoPago?.nombrePago || 'No especificado'
+      },
+      totalFormateado: this.formatearMoneda(compra.total_compra),
+      esLocal: false
+    }));
+  }
+
+  private mapearHistorialLocal(historial: any): any[] {
+    if (!historial || !Array.isArray(historial)) return [];
+    
+    return historial.map(compra => {
+      const primerItem = compra.items[0] || {};
+      const total = compra.items.reduce((sum: number, item: any) => {
+        return sum + ((item.precio_Destino || 0) * (item.cantidad || 1));
+      }, 0);
+
+      return {
+        id_compra: compra.fecha,
+        destino: {
+          nombre_Destino: compra.items.map((i: any) => i.nombre_Destino || 'Destino').join(', '),
+          image: primerItem.image || 'assets/img/default-trip.jpg'
+        },
+        cantidad: compra.items.reduce((sum: number, item: any) => sum + (item.cantidad || 1), 0),
+        total: total,
+        fecha_creacion: compra.fecha,
+        fechaFormateada: this.formatearFecha(compra.fecha),
+        metodo_pago: { 
+          nombrePago: compra.metodoPagoId ? `Método ${compra.metodoPagoId}` : 'No especificado' 
+        },
+        totalFormateado: this.formatearMoneda(total),
+        esLocal: true
+      };
+    });
+  }
+
+  formatearFecha(fecha: string | Date): string {
+    if (!fecha) return 'Fecha no disponible';
+    
+    try {
+      const fechaObj = typeof fecha === 'string' ? new Date(fecha) : fecha;
+      return fechaObj.toLocaleDateString('es-AR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      console.error('Error al formatear fecha:', e);
+      return typeof fecha === 'string' ? fecha : 'Fecha inválida';
+    }
+  }
+
+  formatearMoneda(monto: number): string {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS'
+    }).format(monto || 0);
   }
 
   private manejarErrorPerfil(error: any): void {
@@ -81,7 +187,6 @@ export class DashboardComponent implements OnInit {
     
     if (error.status === 401) {
       this.authService.logout();
-      // Redirigir a login si es necesario
     }
   }
 
@@ -107,6 +212,7 @@ export class DashboardComponent implements OnInit {
         this.actualizarUsuarioLocal();
         this.editMode = false;
         this.loadingSave = false;
+        this.snackBar.open('Perfil actualizado con éxito', 'Cerrar', { duration: 3000, panelClass: ['snackbar-success'] });
       },
       error: (error) => {
         this.manejarErrorActualizacion(error);
@@ -146,9 +252,10 @@ export class DashboardComponent implements OnInit {
     this.loadingSave = false;
   }
 
-  onFileSelected(event: any): void {
-    this.selectedFile = event.target.files[0];
-    if (this.selectedFile) {
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
       this.subirImagenPerfil();
     }
   }
@@ -157,59 +264,31 @@ export class DashboardComponent implements OnInit {
     if (!this.selectedFile) return;
 
     this.loadingImage = true;
-    // Implementar lógica de subida de imagen aquí
-    console.log('Subiendo imagen:', this.selectedFile.name);
-    // Ejemplo:
-    // this.profileService.uploadProfileImage(this.selectedFile).subscribe(...);
-    this.loadingImage = false;
-  }
-
-  listarCompras(): void {
-    this.userService.listarCompras().subscribe({
-      next: (compras: any[]) => {
-        this.compras = this.mapearCompras(compras);
+    
+    this.profileService.uploadProfileImage(this.selectedFile).subscribe({
+      next: (response: any) => {
+        if (this.usuario) {
+          // Asume que response.imageUrl ya es la URL COMPLETA de PythonAnywhere.
+          // Si tu backend solo devuelve la ruta relativa aquí, tendrías que concatenarla
+          // con 'https://dreamtravelmp.pythonanywhere.com' + response.imageUrl.
+          // Pero lo ideal es que el backend ya la devuelva completa.
+          this.usuario.image = response.imageUrl; 
+        }
+        this.snackBar.open('Imagen de perfil actualizada', 'Cerrar', { duration: 3000, panelClass: ['snackbar-success'] });
+        this.loadingImage = false;
       },
       error: (error: any) => {
-        this.manejarErrorCompras(error);
+        console.error('Error al subir imagen:', error);
+        this.snackBar.open('Error al actualizar la imagen', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
+        this.loadingImage = false;
       }
     });
   }
 
-  private mapearCompras(compras: any[]): any[] {
-    return compras.map(compra => ({
-      ...compra,
-      fechaFormateada: this.formatearFecha(compra.fecha_creacion),
-      metodoPago: compra.id_metodoPago?.nombrePago || 'No especificado',
-      totalFormateado: this.formatearMoneda(compra.total)
-    }));
-  }
-
-  private manejarErrorCompras(error: any): void {
-    console.error('Error al cargar compras:', error);
-    this.error = 'Error al cargar el historial de compras.';
-  }
-
-  private formatearFecha(fecha: string): string {
-    if (!fecha) return 'Fecha no disponible';
-    
-    try {
-      return new Date(fecha).toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      console.error('Error al formatear fecha:', e);
-      return fecha;
-    }
-  }
-
-  private formatearMoneda(monto: number): string {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS'
-    }).format(monto);
+  /**
+   * Navega al componente de cambio de contraseña.
+   */
+  navigateToChangePassword(): void {
+    this.router.navigate(['/cambiar-contrasena']);
   }
 }
