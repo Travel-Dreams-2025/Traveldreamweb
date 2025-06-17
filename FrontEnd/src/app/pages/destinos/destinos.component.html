@@ -2,12 +2,28 @@
 <div class="container-fluid mt-4">
   <div class="row">
     <div *ngFor="let destino of destinosList; trackBy: trackById" class="col-lg-3 col-md-4 col-sm-6 mb-4 d-flex align-items-stretch">
-      <div class="card custom-card product-card-hover w-100">  <img [src]="destino.image" class="card-img-top" alt="{{ destino.nombre_Destino }}">
+      <div class="card custom-card product-card-hover w-100" [class.sold-out]="destino.mostrarSoldOut">
+        <div class="destino-imagen-container">
+          <img [src]="destino.image" class="card-img-top" alt="{{ destino.nombre_Destino }}">
+          <span *ngIf="destino.mostrarSoldOut" class="badge sold-out-badge">SOLD OUT</span>
+        </div>
         <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ destino.nombre_Destino }}</h5>
-          <div class="mt-auto d-flex justify-content-between align-items-center">
-<p class="card-text mb-0 precio">{{ destino.precio_Destino | currency:'USD':'symbol':'1.2-2' }}</p>
-            <button class="btn bordered-btn" (click)="abrirModal(destino)" data-bs-toggle="modal" data-bs-target="#destinoModal">Ver Más</button>
+          <div class="destino-info">
+            <p class="card-text mb-1 precio">{{ destino.precio_Destino | currency:'USD':'symbol':'1.2-2' }}</p>
+            <p class="card-text mb-1 small text-muted">
+              <i class="fas fa-calendar-alt"></i> {{ destino.fecha_salida | date:'mediumDate' }}
+            </p>
+            <p class="card-text mb-2 small" *ngIf="!destino.mostrarSoldOut">
+              <i class="fas fa-ticket-alt"></i> Cupos: {{ destino.cantidad_Disponible }}
+            </p>
+          </div>
+          <div class="mt-auto">
+            <button class="btn bordered-btn w-100" 
+                    (click)="abrirModal(destino)" 
+                    [disabled]="destino.mostrarSoldOut">
+              {{ destino.mostrarSoldOut ? 'AGOTADO' : 'Ver Más' }}
+            </button>
           </div>
         </div>
       </div>
@@ -18,12 +34,13 @@
   </div>
 </div>
 
+<!-- Modal de Detalles -->
 <div class="modal fade" id="destinoModal" tabindex="-1" aria-labelledby="destinoModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content" *ngIf="destinoSeleccionado">
       <div class="modal-header">
         <h5 class="modal-title card-title" id="destinoModalLabel">{{ destinoSeleccionado.nombre_Destino }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="cerrarModal()"></button>
       </div>
       <div class="modal-body">
         <div class="row">
@@ -32,31 +49,55 @@
           </div>
           <div class="col-md-6 d-flex flex-column">
             <p>{{ destinoSeleccionado.descripcion }}</p>
-
-            <div class="mt-auto">
-               <div class="d-flex justify-content-between align-items-center mb-3">
-                 <div>
-                    <label for="cantidad" class="form-label fw-bold">Cantidad:</label>
-                    <div class="input-group quantity-control">
-                       <button class="btn btn-outline-secondary" type="button" (click)="decrementarCantidad()">-</button>
-                       <input type="text" id="cantidad" class="form-control text-center" [value]="cantidadSeleccionada" readonly>
-                       <button class="btn btn-outline-secondary" type="button" (click)="incrementarCantidad()">+</button>
-                    </div>
-                 </div>
-                 <div class="text-end">
-                    <p class="mb-0 fw-bold">Total:</p>
-                    <p class="precio h4 mb-0">{{ precioTotalModal | currency:'USD':'symbol':'1.2-2' }}</p>
-                 </div>
+            
+            <div class="detalles-adicionales mt-3 mb-3">
+              <p><strong><i class="fas fa-calendar-alt"></i> Fecha:</strong> {{ destinoSeleccionado.fecha_salida | date:'mediumDate' }}</p>
+              <p><strong><i class="fas fa-money-bill-wave"></i> Precio unitario:</strong> {{ destinoSeleccionado.precio_Destino | currency:'USD':'symbol':'1.2-2' }}</p>
+              <p><strong><i class="fas fa-ticket-alt"></i> Cupos disponibles:</strong> {{ destinoSeleccionado.cantidad_Disponible }}</p>
             </div>
 
+            <div class="mt-auto" *ngIf="!destinoSeleccionado.mostrarSoldOut">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <label for="cantidad" class="form-label fw-bold">Cantidad:</label>
+                  <div class="input-group quantity-control">
+                    <button class="btn btn-outline-secondary" type="button" (click)="decrementarCantidad()">-</button>
+                    <input type="text" id="cantidad" class="form-control text-center" [value]="cantidadSeleccionada" readonly>
+                    <button class="btn btn-outline-secondary" type="button" (click)="incrementarCantidad()">+</button>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <p class="mb-0 fw-bold">Total:</p>
+                  <p class="precio h4 mb-0">{{ precioTotalModal | currency:'USD':'symbol':'1.2-2' }}</p>
+                </div>
+              </div>
+
               <button class="btn custom-btn text-white w-100" (click)="agregarAlCarrito()" [disabled]="agregandoAlCarrito">
-                {{ agregandoAlCarrito ? 'Agregando...' : 'Comprar' }}
-              </button> </div>
+                {{ agregandoAlCarrito ? 'Agregando...' : 'Agregar al Carrito' }}
+              </button>
+            </div>
+            
+            <div *ngIf="destinoSeleccionado.mostrarSoldOut" class="alert alert-danger mt-3">
+              <i class="fas fa-exclamation-circle"></i> Este destino está agotado actualmente.
+            </div>
           </div>
         </div>
       </div>
-      </div>
+    </div>
   </div>
 </div>
 
-<app-bootstrap-toast [title]="tipoAlerta" [message]="mensajeAlerta" *ngIf="mensajeAlerta && tipoAlerta"></app-bootstrap-toast>
+<!-- Alerta Toast -->
+<div id="liveToast" class="toast position-fixed bottom-0 end-0 p-3" style="z-index: 1100" role="alert" aria-live="assertive" aria-atomic="true">
+  <div class="toast-header" [ngClass]="{
+    'bg-success text-white': tipoAlerta === 'success',
+    'bg-danger text-white': tipoAlerta === 'danger',
+    'bg-warning text-dark': tipoAlerta === 'warning'
+  }">
+    <strong class="me-auto">Notificación</strong>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+  </div>
+  <div class="toast-body">
+    {{ mensajeAlerta }}
+  </div>
+</div>
