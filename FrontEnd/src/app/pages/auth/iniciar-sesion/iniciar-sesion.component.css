@@ -1,14 +1,53 @@
+.anchor{
+ text-decoration: none;
+}
 .btn {
     width: 100px;
     height: 2em;
     padding: 3px;
+    color: white;
+}
+.boton {
+    background: #D32788;
+    border-color:#D32788;
+    color: white!important;
+
 }
 
 .btn -btn-success {
     background-color: #240B5C!important;
+    color: white;
 }
 
 .email-label, .form-label {
     margin-top:50px;
     display: block; 
+}
+
+/* Estilos para el botón de toggle */
+.password-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: calc(2.25rem + 2px);
+    border-color: #ced4da;
+    border-left: none;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+    background-color: #e9ecef;
+}
+
+/* Estilos para los iconos de ojo */
+.bi-eye-fill, .bi-eye-slash-fill {
+    font-size: 1.2rem;
+    color: #495057;
+}
+
+.password-toggle-btn:hover .bi-eye-fill,
+.password-toggle-btn:hover .bi-eye-slash-fill {
+    color: #240B5C;
 }

@@ -28,48 +28,49 @@
                 </div>
               </div>
 
-              <!-- Campo de contraseña -->
+              <!-- Campo de contraseña con toggle mejorado -->
               <div class="col-12 mb-3">
                 <label for="inputPass" class="form-label">Contraseña</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  formControlName="password"
-                  id="inputPass"
-                  placeholder="Ingrese su contraseña"
-                  [ngClass]="{'is-invalid': formGroup.get('password')?.touched && formGroup.get('password')?.invalid}"
-                />
+                <div class="input-group">
+                  <input
+                    [type]="showPassword ? 'text' : 'password'"
+                    class="form-control"
+                    formControlName="password"
+                    id="inputPass"
+                    placeholder="Ingrese su contraseña"
+                    [ngClass]="{'is-invalid': formGroup.get('password')?.touched && formGroup.get('password')?.invalid}"
+                  />
+                  <button class="btn btn-outline-secondary password-toggle-btn" 
+                          type="button" 
+                          (click)="togglePasswordVisibility()">
+                    <i class="bi" [class.bi-eye-fill]="!showPassword" [class.bi-eye-slash-fill]="showPassword"></i>
+                  </button>
+                </div>
                 <div *ngIf="formGroup.get('password')?.touched && formGroup.get('password')?.invalid" class="invalid-feedback d-block">
                   <p *ngIf="formGroup.get('password')?.errors?.['required']" class="text-danger">
                     La contraseña es requerida.
                   </p>
                 </div>
-                <!-- CORRECCIÓN CLAVE AQUÍ: Usar errorMessage en lugar de loginError -->
-                <div *ngIf="errorMessage" class="text-danger mt-1">
-                  {{ errorMessage }}
-                </div>
-                <!-- FIN DE LA CORRECCIÓN -->
               </div>
               
-              <!-- Checkbox Recordarme (si aplica) -->
+              <!-- Resto del formulario se mantiene igual -->
               <div class="col-12 mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="rememberMe" formControlName="rememberMe" />
                 <label class="form-check-label" for="rememberMe">Recordarme</label>
               </div>
 
-              <!-- Botón de envío -->
-              <button type="submit" class="btn btn-success btn-block mb-4 text-center" [disabled]="formGroup.invalid || isLoading">
+              <button type="submit" class=" boton mb-4 text-black text-opacity-50 text-center" [disabled]="formGroup.invalid || isLoading">
                 <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                 Iniciar Sesión
               </button>
 
               <div class="mb-4 text-black text-opacity-50">¿Olvidaste tu contraseña?</div>
-              <a class="btn btn-success btn-block mb-4 text-center" [routerLink]="['/recuperar-password']">
+              <a class=" boton anchor mb-4 text-black text-opacity-50 text-center" [routerLink]="['/recuperar-password']">
                 Recuperar Contraseña
               </a>
 
               <div class="mb-4 text-black text-opacity-50">¿No estás registrado aún?</div>
-              <a class="btn btn-success btn-block mb-4 text-center" routerLink="/registro">
+              <a class="boton anchor mb-4 text-black text-opacity-50 text-center" routerLink="/registro">
                 Registrarse
               </a>
             </form>
