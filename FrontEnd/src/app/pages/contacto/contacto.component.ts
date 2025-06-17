@@ -1,68 +1,62 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
 import {
+  FormControl,
   FormGroup,
-  FormBuilder,
-  Validators,
   ReactiveFormsModule,
+  Validators,
 } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-contacto',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './contacto.component.html',
-  styleUrls: ['./contacto.component.css'],
+  styleUrl: './contacto.component.css',
 })
-export class ContactoComponent implements OnInit {
-  formgroup!: FormGroup;
-  submitSuccess: boolean = false;
-  submitError: boolean = false;
+export class ContactoComponent {
+  formgroup = new FormGroup({
+    name: new FormControl('', Validators.required),
+    email: new FormControl('', [Validators.required, Validators.email]),
+    phone: new FormControl('', Validators.required),
+    message: new FormControl('', Validators.required),
+  });
 
-  constructor(
-    private fb: FormBuilder,
-    private http: HttpClient,
-    private router: Router
-  ) {}
+  botonEnviado = false; // Nueva variable para controlar el estado del botón
 
-  ngOnInit(): void {
-    this.formgroup = this.fb.group({
-      name: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]],
-      phone: ['', Validators.required],
-      message: ['', Validators.required],
-    });
-    window.scrollTo(0, 0);
+  clickContacto(): void {
+    if (this.formgroup.valid && !this.botonEnviado) {
+      this.botonEnviado = true; // Marcamos el botón como "enviado"
+      const name = this.formgroup.controls.name.value;
+      const email = this.formgroup.controls.email.value;
+      const phone = this.formgroup.controls.phone.value;
+      const message = this.formgroup.controls.message.value;
+      console.log(
+        'Name:',
+        name,
+        'Email:',
+        email,
+        'Phone:',
+        phone,
+        'Message:',
+        message
+      );
+
+      // Simulación de envío (puedes reemplazar esto con tu lógica real)
+      setTimeout(() => {
+        alert('Mensaje enviado correctamente');
+        this.formgroup.reset();
+        this.botonEnviado = false; // Reseteamos el estado del botón después de la simulación
+      }, 1500); // Simula un tiempo de espera de 1.5 segundos
+    } else if (this.botonEnviado) {
+      alert('Por favor, espera un momento...'); // Evita clics múltiples mientras se envía
+    } else {
+      alert('Por favor, completa todos los campos correctamente.');
+    }
   }
 
-  onSubmit(): void {
-    this.submitSuccess = false;
-    this.submitError = false;
-
-    if (this.formgroup.invalid) {
-      this.formgroup.markAllAsTouched();
-      console.log('Formulario inválido.');
-      return;
-    }
-
-    const formspreeUrl = 'https://formspree.io/f/xeokkjrr';
-
-    this.http.post(formspreeUrl, this.formgroup.value).subscribe({
-      next: (response: any) => {
-        console.log('Mensaje enviado con éxito.');
-        this.submitSuccess = true;
-        this.formgroup.reset();
-        Object.keys(this.formgroup.controls).forEach((key) => {
-          this.formgroup.get(key)?.setErrors(null);
-        });
-        // this.router.navigate(['/gracias']);
-      },
-      error: (error) => {
-        console.error('Error al enviar el formulario.', error);
-        this.submitError = true;
-      },
-    });
+  getButtonClass() {
+    return this.botonEnviado
+      ? 'btn btn-success btn-lg'
+      : 'btn btn-success btn-lg btn-custom';
   }
 }
