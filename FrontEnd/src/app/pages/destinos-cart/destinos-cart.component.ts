@@ -38,6 +38,9 @@ export class DestinosCartComponent implements OnInit {
   isLoading: boolean = false; // Nuevo: Para manejar el estado de carga
   errorMessage: string | null = null; // Nuevo: Para mostrar errores al usuario
 
+  //Estado del pago
+  pagoEnProceso: boolean = false; 
+
   constructor(
     private carritoService: CarritoService,
     private authService: AuthService,
@@ -448,11 +451,15 @@ export class DestinosCartComponent implements OnInit {
       id_destino: item.id_destino
     }));
 
+    this.pagoEnProceso = true;
+    
     this.carritoService.createMercadoPagoPreference(mercadopagoItems, userId).subscribe({
       next: (preferenceResponse: any) => {
         const initPoint = preferenceResponse.init_point;
         if (initPoint) {
-          window.location.href = initPoint;
+          window.open(initPoint, '_blank');
+          // **¡Aquí se agregó el mensaje!**
+          this.carritoService.mostrarAlerta('Se está abriendo Mercado Pago en una nueva pestaña. Por favor, revísala para completar tu pago.', 'info');
         } else {
           console.error('No se recibió el init_point de Mercado Pago:', preferenceResponse);
           this.carritoService.mostrarAlerta('No se pudo iniciar el proceso de pago con Mercado Pago.', 'error');

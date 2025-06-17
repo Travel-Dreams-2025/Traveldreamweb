@@ -1,19 +1,21 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core'; // Ya no se necesita ChangeDetectorRef
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { HttpClientModule, HttpErrorResponse } from '@angular/common/http';
-import { FormsModule } from '@angular/forms'; // Mantener FormsModule para [(ngModel)]
+import { FormsModule } from '@angular/forms';
 import { DestinosService } from '../../services/destinos.service';
 import { CarritoService, MetodoPago } from '../../services/carrito.service';
 import { Destino } from '../../models/destinos';
 import { AuthService } from '../../services/auth.service';
-import { AlertaComponent } from '../../alerta/alerta.component';
-import { Observable, of } from 'rxjs'; // Necesario para 'of' y 'Observable'
-import { catchError, tap } from 'rxjs/operators'; // Necesario para operadores de RxJS
+import { Observable, of } from 'rxjs';
+import { catchError } from 'rxjs/operators'; // 'tap' no se está usando aquí, se puede eliminar si no se usa en otra parte
+import { MessageService } from '../../services/message.service'; // Importa tu servicio de mensajes
 
-// Declarar bootstrap globalmente para acceder a la API de Bootstrap JS
-// Asegúrate de que Bootstrap JS esté correctamente incluido en tu proyecto (ejemplo: en angular.json)
+// NOTA: 'declare var bootstrap: any;' SOLO es necesario si interactúas directamente
+// con componentes de Bootstrap JS (como 'new bootstrap.Modal()').
+// Si solo usas el modal, puedes mantenerla. Si no, se puede eliminar.
 declare var bootstrap: any;
+
 
 @Component({
   selector: 'app-destinos',
@@ -22,8 +24,7 @@ declare var bootstrap: any;
     CommonModule,
     RouterModule,
     HttpClientModule,
-    FormsModule, // Importar FormsModule
-    AlertaComponent,
+    FormsModule,
     CurrencyPipe
   ],
   templateUrl: './destinos.component.html',
@@ -32,8 +33,7 @@ declare var bootstrap: any;
 export class DestinosComponent implements OnInit {
   destinosList: Destino[] = [];
   titulo: string = "Nuestros Destinos";
-  tipoAlerta: string = '';
-  mensajeAlerta: string = '';
+  // Eliminadas: tipoAlerta: string = ''; mensajeAlerta: string = '';
   destinoSeleccionado: Destino | null = null;
   cantidadSeleccionada: number = 1;
   precioTotalModal: number = 0;
@@ -49,13 +49,13 @@ export class DestinosComponent implements OnInit {
     private carritoService: CarritoService,
     private authService: AuthService,
     private router: Router,
-    private cdRef: ChangeDetectorRef // Para forzar detección de cambios en alertas
+    private messageService: MessageService // Inyecta el MessageService
   ) {}
 
   ngOnInit(): void {
     this.getDestinos();
-    this.inicializarModal(); // Inicializar el modal al inicio
-    this.loadMetodosPago(); // Carga los métodos de pago al iniciar el componente
+    this.inicializarModal();
+    this.loadMetodosPago();
   }
 
   /**
@@ -66,11 +66,10 @@ export class DestinosComponent implements OnInit {
     if (modalElement) {
       this.modal = new bootstrap.Modal(modalElement);
 
-      // Manejar evento cuando el modal se cierra
       modalElement.addEventListener('hidden.bs.modal', () => {
         this.destinoSeleccionado = null;
-        this.cleanBodyStyles(); // Limpiar estilos del body al cerrar
-        this.removeModalBackdrop(); // Remover backdrop al cerrar
+        this.cleanBodyStyles();
+        this.removeModalBackdrop();
       });
     }
   }
@@ -79,13 +78,14 @@ export class DestinosComponent implements OnInit {
    * Obtiene la lista de destinos públicos del servicio.
    */
   getDestinos(): void {
-    this.destinosService.obtenerDestinos().subscribe({ // Asumo obtenerDestinosPublicos es el método correcto
+    this.destinosService.obtenerDestinos().subscribe({
       next: (data: Destino[]) => {
         this.destinosList = data;
       },
       error: (err: HttpErrorResponse) => {
         console.error('Error al obtener destinos:', err);
-        this.mostrarAlerta('Error al cargar los destinos. Intenta recargar la página.', 'danger');
+        // Usar 'error' en lugar de 'danger' para el tipo de alerta
+        this.mostrarAlerta('Error al cargar los destinos. Intenta recargar la página.', 'error');
       }
     });
   }
@@ -98,7 +98,7 @@ export class DestinosComponent implements OnInit {
       catchError(error => {
         console.error('Error al cargar métodos de pago en DestinosComponent:', error);
         this.mostrarAlerta('No se pudieron cargar los métodos de pago. El carrito podría no funcionar correctamente.', 'error');
-        return of([]); // Retorna un observable vacío para que la suscripción no falle
+        return of([]);
       })
     ).subscribe({
       next: (metodos: MetodoPago[]) => {
@@ -123,10 +123,10 @@ export class DestinosComponent implements OnInit {
     this.cantidadSeleccionada = 1;
     this.actualizarPrecioTotalModal();
     this.agregandoAlCarrito = false;
-    this.cleanBodyStyles(); // Limpieza preventiva al abrir el modal (en caso de que estuviera mal cerrado)
-    this.removeModalBackdrop(); // Remoción preventiva de backdrop
+    this.cleanBodyStyles();
+    this.removeModalBackdrop();
     if (this.modal) {
-      this.modal.show(); // Mostrar el modal
+      this.modal.show();
     }
   }
 
@@ -171,31 +171,27 @@ export class DestinosComponent implements OnInit {
   agregarAlCarrito(): void {
     if (!this.destinoSeleccionado || this.agregandoAlCarrito) return;
 
-    // Verificar autenticación
     if (!this.authService.isLoggedIn()) {
-      this.cerrarModal(); // Cerrar el modal antes de redirigir
+      this.cerrarModal();
       this.router.navigate(['/iniciar-sesion'], {
-        queryParams: { returnUrl: this.router.url } // Redirigir al usuario de vuelta a esta página
+        queryParams: { returnUrl: this.router.url }
       });
-      return; // Detener la ejecución
+      return;
     }
 
-    // Validación para el método de pago antes de enviar al carrito
     if (this.metodoPagoSeleccionado === null) {
       console.error('Error: No se ha cargado un método de pago predeterminado.');
       this.mostrarAlerta('No se pudo determinar un método de pago. Intenta recargar la página o contacta al soporte.', 'error');
       return;
     }
 
-    this.agregandoAlCarrito = true; // Deshabilitar el botón
+    this.agregandoAlCarrito = true;
 
     const idDestino = this.destinoSeleccionado.id_destino;
     const cantidad = this.cantidadSeleccionada;
     const nombreDestino = this.destinoSeleccionado.nombre_Destino;
-    // Asumiendo que `fecha_salida` se toma del destino seleccionado, no de `new Date()`
     const fechaSalida = new Date(this.destinoSeleccionado.fecha_salida).toISOString().split('T')[0];
 
-    // Usar el método addItemCarrito con el objeto completo
     this.carritoService.addItemCarrito({
       id_destino: idDestino,
       cantidad: cantidad,
@@ -204,26 +200,25 @@ export class DestinosComponent implements OnInit {
     }).subscribe({
       next: (response: any) => {
         this.mostrarAlerta(`${nombreDestino} (x${cantidad}) agregado al carrito con éxito.`, 'success');
-        this.cerrarModal(); // Cerrar el modal
-        this.agregandoAlCarrito = false; // Habilitar el botón
+        this.cerrarModal();
+        this.agregandoAlCarrito = false;
       },
       error: (err: HttpErrorResponse | any) => {
         console.error('Error al agregar al carrito:', err);
         const errorMessage = err.error?.error || err.message || 'Hubo un error al agregar el destino al carrito.';
-        this.mostrarAlerta(`Error al agregar ${nombreDestino} al carrito: ${errorMessage}`, 'danger');
-        this.agregandoAlCarrito = false; // Habilitar el botón
+        // Usar 'error' en lugar de 'danger' para el tipo de alerta
+        this.mostrarAlerta(`Error al agregar ${nombreDestino} al carrito: ${errorMessage}`, 'error');
+        this.agregandoAlCarrito = false;
       }
     });
   }
 
   /**
    * Cierra el modal de detalle del destino.
-   * Se modificó para usar la instancia de Bootstrap y asegurar la limpieza.
    */
   cerrarModal(): void {
     if (this.modal) {
       this.modal.hide();
-      // El listener 'hidden.bs.modal' en inicializarModal() se encargará de la limpieza
     } else {
       console.warn('cerrarModal: No se encontró instancia de Bootstrap modal para #destinoModal. Limpiando manualmente.');
       this.cleanBodyStyles();
@@ -255,60 +250,17 @@ export class DestinosComponent implements OnInit {
   }
 
   /**
-   * Muestra una alerta en la interfaz de usuario utilizando el componente AlertaComponent.
+   * Muestra una alerta en la interfaz de usuario utilizando el MessageService global.
    * @param mensaje El mensaje a mostrar.
-   * @param tipo El tipo de alerta (ej. 'success', 'danger', 'warning', 'info', 'error').
+   * @param tipo El tipo de alerta (ej. 'success', 'error', 'warning', 'info').
    */
-  mostrarAlerta(mensaje: string, tipo: string): void {
-    this.mensajeAlerta = mensaje;
-    this.tipoAlerta = tipo;
-    this.cdRef.detectChanges(); // Forzar la detección de cambios para que la alerta se muestre inmediatamente
-    this.showAlert(); // Mostrar el toast de Bootstrap
+  mostrarAlerta(mensaje: string, tipo: 'success' | 'error' | 'warning' | 'info'): void {
+    this.messageService.mostrarAlerta(mensaje, tipo);
+    // Ya no necesitas manipular directamente el toast aquí.
+    // Toda la lógica de mostrar/ocultar el toast y el setTimeout está en MessageDisplayComponent.
   }
 
-  /**
-   * Muestra el toast de Bootstrap.
-   */
-  showAlert(): void {
-    const toastElement = document.getElementById('liveToast');
-    if (toastElement && typeof bootstrap !== 'undefined' && typeof bootstrap.Toast !== 'undefined') {
-      try {
-        const toastBootstrap = bootstrap.Toast.getOrCreateInstance(toastElement);
-        toastBootstrap.show();
-      } catch (e) {
-        console.error("Error al mostrar el toast de Bootstrap:", e);
-        // Si hay un error, limpiar la alerta de forma manual
-        this.limpiarAlertaDespuesDeTiempo();
-      }
-    } else {
-      console.warn('Elemento Toast con ID "liveToast" no encontrado o Bootstrap Toast no disponible.');
-      // Si no se puede usar Bootstrap Toast, limpiar la alerta después de un tiempo
-      this.limpiarAlertaDespuesDeTiempo();
-    }
-    // Asegurarse de que la alerta se oculte después de un tiempo, incluso si el toast de Bootstrap falla
-    setTimeout(() => {
-      this.limpiarAlerta();
-    }, 6000); // Duración del toast + un pequeño margen
-  }
-
-  /**
-   * Limpia el mensaje y tipo de alerta.
-   */
-  limpiarAlerta(): void {
-    this.mensajeAlerta = '';
-    this.tipoAlerta = '';
-    this.cdRef.detectChanges(); // Forzar la detección de cambios para ocultar la alerta
-  }
-
-  /**
-   * Limpia la alerta después de un tiempo especificado.
-   * @param tiempo El tiempo en milisegundos para limpiar la alerta (por defecto 5000ms).
-   */
-  limpiarAlertaDespuesDeTiempo(tiempo: number = 5000): void {
-    setTimeout(() => {
-      this.limpiarAlerta();
-    }, tiempo);
-  }
+  // Eliminados: showAlert(), limpiarAlerta(), limpiarAlertaDespuesDeTiempo()
 
   /**
    * Función de seguimiento para el rendimiento de la lista de destinos.
