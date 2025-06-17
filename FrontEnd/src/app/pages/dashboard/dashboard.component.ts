@@ -1,18 +1,19 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user.service';
 import { ProfileService } from '../../services/profile.service';
 import { AuthService } from '../../services/auth.service';
 import { CarritoService } from '../../services/carrito.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { forkJoin } from 'rxjs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { forkJoin, Observable, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, FormsModule],
+  imports: [RouterOutlet, CommonModule, FormsModule, MatSnackBarModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -37,7 +38,8 @@ export class DashboardComponent implements OnInit {
     private profileService: ProfileService,
     private authService: AuthService,
     private carritoService: CarritoService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -65,30 +67,39 @@ export class DashboardComponent implements OnInit {
   }
 
   private cargarHistorialCompleto(): void {
+    const historialLocal = this.carritoService.obtenerHistorialLocal();
+
     forkJoin({
-      comprasBackend: this.userService.listarCompras(),
-      historialLocal: this.carritoService.obtenerHistorial()
+      comprasBackend: this.userService.listarCompras().pipe(
+        catchError(err => {
+          console.error('Error al listar compras del backend:', err);
+          return of([]);
+        })
+      )
     }).subscribe({
-      next: ({comprasBackend, historialLocal}) => {
+      next: ({comprasBackend}) => {
         this.compras = [
           ...this.mapearCompras(comprasBackend || []),
           ...this.mapearHistorialLocal(historialLocal || [])
         ];
       },
-      error: (error) => {
-        console.error('Error al cargar historial:', error);
-        this.compras = this.mapearHistorialLocal(this.carritoService.obtenerHistorial() || []);
+      error: (error: any) => {
+        console.error('Error al cargar historial completo:', error);
+        this.compras = this.mapearHistorialLocal(this.carritoService.obtenerHistorialLocal() || []);
+        this.snackBar.open('Error al cargar historial desde el servidor. Mostrando historial local.', 'Cerrar', { duration: 5000 });
       }
     });
   }
 
   private mapearUsuario(usuario: any): any {
+    const imageUrl = usuario.image 
+      ? usuario.image 
+      : 'assets/img/A01_avatar_mujer.png';
+
     return {
       first_name: usuario.first_name,
       last_name: usuario.last_name,
-      image: usuario.image 
-        ? 'https://dreamtravel.pythonanywhere.com' + usuario.image 
-        : 'assets/img/A01_avatar_mujer.png',
+      image: imageUrl,
       telephone: usuario.telephone || 'No proporcionado',
       address: usuario.address || 'No proporcionada',
       dni: usuario.dni || 'No proporcionado'
@@ -96,11 +107,22 @@ export class DashboardComponent implements OnInit {
   }
 
   private mapearCompras(compras: any[]): any[] {
+    const apiBaseUrlForDestinos = 'https://dreamtravelmp.pythonanywhere.com'; 
+
     return compras.map(compra => ({
       ...compra,
-      fechaFormateada: this.formatearFecha(compra.fecha_creacion),
-      metodoPago: compra.id_metodoPago?.nombrePago || 'No especificado',
-      totalFormateado: this.formatearMoneda(compra.total),
+      fechaFormateada: this.formatearFecha(compra.fecha_compra),
+      nombre_destino: compra.id_destino?.nombre_Destino || 'Destino Desconocido',
+      destino: {
+        image: compra.id_destino?.image
+          ? apiBaseUrlForDestinos + compra.id_destino.image // Usamos la URL base de PythonAnywhere
+          : 'assets/img/default-trip.jpg',
+        nombre_Destino: compra.id_destino?.nombre_Destino || 'Destino Desconocido'
+      },
+      metodo_pago: {
+        nombrePago: compra.id_metodoPago?.nombrePago || 'No especificado'
+      },
+      totalFormateado: this.formatearMoneda(compra.total_compra),
       esLocal: false
     }));
   }
@@ -190,7 +212,7 @@ export class DashboardComponent implements OnInit {
         this.actualizarUsuarioLocal();
         this.editMode = false;
         this.loadingSave = false;
-        this.snackBar.open('Perfil actualizado con éxito', 'Cerrar', { duration: 3000 });
+        this.snackBar.open('Perfil actualizado con éxito', 'Cerrar', { duration: 3000, panelClass: ['snackbar-success'] });
       },
       error: (error) => {
         this.manejarErrorActualizacion(error);
@@ -246,16 +268,27 @@ export class DashboardComponent implements OnInit {
     this.profileService.uploadProfileImage(this.selectedFile).subscribe({
       next: (response: any) => {
         if (this.usuario) {
-          this.usuario.image = response.imageUrl;
+          // Asume que response.imageUrl ya es la URL COMPLETA de PythonAnywhere.
+          // Si tu backend solo devuelve la ruta relativa aquí, tendrías que concatenarla
+          // con 'https://dreamtravelmp.pythonanywhere.com' + response.imageUrl.
+          // Pero lo ideal es que el backend ya la devuelva completa.
+          this.usuario.image = response.imageUrl; 
         }
-        this.snackBar.open('Imagen de perfil actualizada', 'Cerrar', { duration: 3000 });
+        this.snackBar.open('Imagen de perfil actualizada', 'Cerrar', { duration: 3000, panelClass: ['snackbar-success'] });
         this.loadingImage = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error al subir imagen:', error);
-        this.snackBar.open('Error al actualizar la imagen', 'Cerrar', { duration: 3000 });
+        this.snackBar.open('Error al actualizar la imagen', 'Cerrar', { duration: 3000, panelClass: ['snackbar-error'] });
         this.loadingImage = false;
       }
     });
+  }
+
+  /**
+   * Navega al componente de cambio de contraseña.
+   */
+  navigateToChangePassword(): void {
+    this.router.navigate(['/cambiar-contrasena']);
   }
 }

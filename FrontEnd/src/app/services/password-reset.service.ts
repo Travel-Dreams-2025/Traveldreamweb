@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
   providedIn: 'root',
 })
 export class PasswordResetService {
-  private apiUrl = 'https://dreamtravel.pythonanywhere.com/api/accounts';
+  private apiUrl = 'https://dreamtravelmp.pythonanywhere.com/api/accounts';
 
   constructor(private http: HttpClient) {}
 

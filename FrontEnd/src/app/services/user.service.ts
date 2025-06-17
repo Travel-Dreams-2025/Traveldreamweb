@@ -6,11 +6,11 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class UserService {
-  private cartApiUrl = 'https://dreamtravel.pythonanywhere.com/api/v1/cart/';
+  private baseUrl = 'https://dreamtravelmp.pythonanywhere.com/api/v1/'; 
 
   constructor(private http: HttpClient) { }
 
   listarCompras(): Observable<any[]> {
-    return this.http.get<any[]>(this.cartApiUrl);
+    return this.http.get<any[]>(`${this.baseUrl}carrito/`); 
   }
 }

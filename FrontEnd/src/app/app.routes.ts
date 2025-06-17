@@ -13,6 +13,10 @@ import { AuthGuard } from './interceptors/auth.guard';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { RecuperarPasswordComponent } from './pages/recuperar-password/recuperar-password.component';
 import { NuevoPasswordComponent } from './pages/auth/nuevo-password/nuevo-password.component';
+import { PagoExitoComponent } from './components/pago-exito/pago-exito.component';
+import { PagoFallidoComponent } from './components/pago-fallido/pago-fallido.component';
+import { PagoPendienteComponent } from './components/pago-pendiente/pago-pendiente.component';
+import { ChangePasswordComponent } from './pages/change-password/change-password.component'; // ¡NUEVA IMPORTACIÓN!
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -27,9 +31,14 @@ export const routes: Routes = [
   { path: 'nosotros', component: NosotrosComponent },
   { path: 'nosotros/:id', component: ProfesionalComponent },
   { path: 'recuperar-password', component: RecuperarPasswordComponent },
-  { path: 'new-password/:uid/:token', component: NuevoPasswordComponent },
+  { path: 'new-password/:uid/:token', component: NuevoPasswordComponent }, 
+  { path: 'cambiar-contrasena', component: ChangePasswordComponent, canActivate: [AuthGuard] },
+
   { path: 'novedades', loadComponent: () => import('./pages/novedades/novedades.component').then(m => m.NovedadesComponent) },
+  { path: 'pago-exito', component: PagoExitoComponent },
+  { path: 'pago-fallido', component: PagoFallidoComponent },
+  { path: 'pago-pendiente', component: PagoPendienteComponent },
   
-  // IMPORTANTE: La ruta comodín (**) debe ser la ÚLTIMA
+  // Ruta de error 404
   { path: '**', component: Pagina404Component }
 ];

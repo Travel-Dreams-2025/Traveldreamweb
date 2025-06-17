@@ -24,11 +24,13 @@ export class NosotrosComponent implements OnInit {
   obtenerProfesionales(): void {
     this.nosotrosService.obtenerProfesionales().subscribe({
       next: (profesionalList) => {
-        this.profesionalList = profesionalList;
+        // Asegura que la lista entrante sea un array
+        this.profesionalList = Array.isArray(profesionalList) ? profesionalList.filter(p => p != null) : [];
         this.ordenarProfesionales();
       },
       error: (error) => {
-        console.error(error);
+        console.error('Error al obtener profesionales:', error);
+        this.profesionalList = []; // Establece a un array vacío en caso de error
       },
     });
   }
@@ -40,15 +42,30 @@ export class NosotrosComponent implements OnInit {
     const otherMembers = this.profesionalList.filter(
       (p) => p.nombre_apellido !== 'Travel Dreams'
     );
-    this.profesionalList = [
-      travelDreamsLogos[0],
-      otherMembers[0],
-      travelDreamsLogos[1],
-      ...otherMembers.slice(1),
-    ];
+
+    const orderedList: any[] = [];
+
+    // Añade los logos de Travel Dreams si existen
+    if (travelDreamsLogos[0]) {
+      orderedList.push(travelDreamsLogos[0]);
+    }
+    // Añade el primer "otro" miembro si existe
+    if (otherMembers[0]) {
+      orderedList.push(otherMembers[0]);
+    }
+    // Añade el segundo logo de Travel Dreams si existe
+    if (travelDreamsLogos[1]) {
+      orderedList.push(travelDreamsLogos[1]);
+    }
+
+    // Añade el resto de los "otros" miembros a partir del segundo
+    orderedList.push(...otherMembers.slice(1));
+
+    // Asigna la lista limpia y ordenada
+    this.profesionalList = orderedList;
   }
 
   trackById(index: number, nosotros: any): number {
-    return nosotros.id_nosotros;
+    return nosotros?.id_nosotros || index;
   }
 }

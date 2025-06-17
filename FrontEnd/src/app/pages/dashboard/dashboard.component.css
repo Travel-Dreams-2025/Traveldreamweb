@@ -23,6 +23,12 @@
   display: flex;
   gap: 30px;
   margin-top: 20px;
+  flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+}
+
+.profile-image-container {
+  text-align: center;
+  margin-bottom: 20px; /* Espacio para móviles */
 }
 
 .profile-image {
@@ -33,12 +39,125 @@
   border: 3px solid #e9ecef;
 }
 
+.image-upload {
+  margin-top: 10px;
+}
+
+.upload-button {
+  background-color: #007bff;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 0.9em;
+}
+
 .profile-info {
   flex: 1;
+  min-width: 280px; /* Asegura que no se haga demasiado pequeño en flex */
 }
+
+.edit-button,
+.change-password-button {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  margin-right: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.edit-button:hover,
+.change-password-button:hover {
+  background-color: #0056b3;
+}
+
+
+/* --- Estilos para el formulario de edición de perfil (Nuevo) --- */
+
+.edit-profile-form { /* Clase añadida al formulario en HTML */
+  background-color: #ffffff;
+  border-radius: 12px; /* Más redondeado */
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  max-width: 500px; /* Ancho máximo para el formulario */
+  width: 100%; /* Asegura que ocupe todo el ancho disponible */
+  margin: 20px auto; /* Centra el formulario en el espacio disponible */
+}
+
+.text-dark-blue {
+  color: #2c3e50; /* Un azul oscuro que combine con muchos temas */
+}
+
+.text-secondary {
+  color: #6c757d;
+}
+
+.form-control.rounded { /* Asegura que aplique a los inputs */
+  border-radius: 8px; /* Bordes redondeados para los inputs */
+  padding: 10px 15px;
+  border: 1px solid #ced4da;
+}
+
+.form-control.rounded:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-primary.rounded {
+  background-color: #007bff;
+  border-color: #007bff;
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 1.1em;
+  transition: all 0.3s ease;
+}
+
+.btn-primary.rounded:hover {
+  background-color: #0056b3;
+  border-color: #004085;
+  transform: translateY(-2px); /* Pequeño efecto al pasar el ratón */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-secondary.rounded {
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 1.1em;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary.rounded:hover {
+  background-color: #e2e6ea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.spinner-border {
+  margin-right: 8px;
+}
+
+.alert-danger.rounded {
+  border-radius: 8px;
+}
+
+
+/* --- FIN de Estilos para el formulario de edición de perfil --- */
+
 
 .purchases-section {
   margin-top: 40px;
+}
+
+.historial-section { /* Usado para el historial de compras */
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
 }
 
 .purchase-list {
@@ -47,49 +166,82 @@
   margin-top: 20px;
 }
 
-.purchase-card {
+.compra-card { /* Usado para cada tarjeta de compra */
   background-color: #fff;
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   border-left: 4px solid #3498db;
+  display: flex;
+  flex-direction: column; /* Apila los elementos por defecto */
+  margin-bottom: 15px;
 }
 
-.purchase-header {
+.compra-card.local {
+    border-left-color: #ffc107; /* Color diferente para compras locales */
+}
+
+.compra-header {
   display: flex;
   justify-content: space-between;
   margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid #eee;
+  font-weight: bold;
+  color: #34495e;
 }
 
-.destination {
-  font-weight: bold;
+.fecha {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.total {
+    font-size: 1.1em;
+    color: #28a745; /* Verde para el total */
+}
+
+.compra-body {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.compra-body img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.compra-info {
+  flex-grow: 1;
+}
+
+.compra-info h4 {
+  margin: 0 0 5px 0;
   color: #2c3e50;
   font-size: 1.1em;
 }
 
-.purchase-id {
-  color: #7f8c8d;
+.compra-details {
   font-size: 0.9em;
-}
-
-.purchase-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 15px;
-}
-
-.detail-item {
+  color: #555;
   display: flex;
-  flex-direction: column;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.detail-label {
-  font-weight: bold;
-  color: #7f8c8d;
-  font-size: 0.9em;
-  margin-bottom: 5px;
+.local-badge {
+    background-color: #ffc107;
+    color: #343a40;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    font-weight: bold;
+    margin-top: 5px;
+    display: inline-block;
 }
 
 .error-message {
@@ -100,7 +252,7 @@
   margin: 20px 0;
 }
 
-.no-purchases {
+.no-compras { /* Renombrado de .no-purchases */
   text-align: center;
   padding: 20px;
   color: #7f8c8d;
@@ -111,4 +263,51 @@
   text-align: center;
   padding: 20px;
   color: #3498db;
+}
+
+/* Media Queries para responsividad */
+@media (max-width: 768px) {
+  .profile-details {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .profile-info {
+    width: 100%;
+  }
+
+  .edit-profile-form {
+    padding: 20px;
+    margin: 0 auto; /* Centra el formulario en el espacio disponible */
+  }
+
+  .compra-body {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .compra-body img {
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 576px) {
+  .dashboard-container {
+    padding: 10px;
+  }
+
+  .profile-section {
+    padding: 15px;
+  }
+
+  .edit-profile-form {
+    padding: 15px;
+  }
+
+  .btn-primary.rounded,
+  .btn-outline-secondary.rounded {
+    font-size: 1em;
+    padding: 8px 12px;
+  }
 }

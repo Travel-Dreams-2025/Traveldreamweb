@@ -1,247 +1,268 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, throwError, forkJoin } from 'rxjs';
-import { catchError, tap, switchMap } from 'rxjs/operators';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+// import { MatSnackBar } from '@angular/material/snack-bar'; // Descomenta si usas Angular Material SnackBar
 
-interface CarritoItem {
+// --- Interfaces necesarias (TODAS EXPORTADAS) ---
+
+export interface CarritoItem {
+  id_compra: number; // ID del item en el carrito (o ID de la compra)
+  id_usuario?: number; // El ID del usuario asociado
+  id_destino: number; // ID del destino
+  nombre_Destino: string;
+  descripcion: string;
+  precio_Destino: number;
+  cantidad: number;
+  fecha_salida: string; // O Date, asegúrate de que el formato sea 'YYYY-MM-DD' para el backend
+  image: string; // Asegúrate de que esta propiedad exista en tu serializador si la usas
+  selected?: boolean; // Para la selección en el carrito
+  cantidad_Disponible?: number; // Añadido para el stock disponible del destino
+}
+
+export interface CarritoAddItem {
   id_destino: number;
   cantidad: number;
-  fecha_salida?: string;
-  nombre_Destino?: string;
-  precio_Destino?: number;
-  image?: string;
+  fecha_salida?: string; // Hacerlo opcional si a veces no se envía
+  id_metodoPago?: number; // Hacerlo opcional si a veces no se envía o el backend tiene un default
 }
 
-interface CompraHistorial {
-  fecha: string;
-  items: {
-    id_destino: number;
-    cantidad: number;
-    nombre_Destino?: string;
-    precio_Destino?: number;
-    image?: string;
-    fecha?: string;
-  }[];
-  metodoPagoId: number;
-  estado: 'pendiente' | 'completado' | 'cancelado';
+export interface MetodoPago {
+  id_metodoPago: number;
+  nombrePago: string;
 }
+
+// Interfaz Destino exportada y completa
+export interface Destino {
+  id_destino: number;
+  nombre_Destino: string;
+  descripcion: string;
+  precio_Destino: number;
+  cantidad_Disponible: number; // Esencial para la validación de stock
+  image: string;
+  fecha_salida?: string | Date; // Asegúrate de que el tipo coincida con tu modelo
+  mostrarSoldOut?: boolean; // Añadido para consistencia con el componente
+  estaVigente?: boolean;   // Añadido para consistencia con el componente
+  tieneCupo?: boolean;     // Añadido para consistencia con el componente
+}
+
+export interface CompraHistorialItem {
+  id_compra: number;
+  id_usuario: number;
+  id_destino: number;
+  cantidad: number;
+  precio_unitario: number;
+  total_compra: number;
+  fecha_compra: string;
+  nombre_destino?: string;
+  imagen_destino?: string;
+  descripcion_destino?: string;
+  fecha_salida_destino?: string;
+  estado_compra?: string; // Ahora esto se mapearía a 'estado_pago' del modelo Carrito
+  id_metodoPago?: number;
+}
+
+export interface MercadoPagoPreferenceResponse {
+  init_point: string;
+  preference_id: string;
+  external_reference: string;
+}
+
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class CarritoService {
-  private baseUrl = 'https://dreamtravel.pythonanywhere.com/api/v1';
-  private historialKey = 'dreamtravel_historial';
+  private baseUrl = 'https://dreamtravelmp.pythonanywhere.com'; 
+  private apiUrl = `${this.baseUrl}/api/v1`; 
+
+  private carritoBaseUrl = `${this.apiUrl}/carrito`; 
+  private metodosPagoUrl = `${this.apiUrl}/metodos-pago`;
+  private destinosBaseUrl = `${this.apiUrl}/destinos`; 
+  private historialComprasApiUrl = `${this.apiUrl}/purchases`; 
+  private checkoutUrl = `${this.apiUrl}/checkout`; 
+
+  private mercadopagoCreatePreferenceUrl = `${this.apiUrl}/mercadopago/create_preference/`;
 
   constructor(
     private http: HttpClient,
-    private snackBar: MatSnackBar
-  ) {}
+    // private snackBar: MatSnackBar // Descomenta si usas Angular Material SnackBar
+  ) { }
 
-  // ========== MANEJO DE ERRORES ==========
-  private handleError(error: any): Observable<never> {
-    console.error('Error en CarritoService:', error);
-    const errorMessage = error.error?.message || 'Error en la operación';
-    this.showError(errorMessage);
-    return throwError(() => new Error(errorMessage));
-  }
+  // --- Métodos del Carrito (Ajustados al ViewSet) ---
 
-  private showError(message: string): void {
-    this.snackBar.open(message, 'Cerrar', {
-      duration: 3000,
-      panelClass: ['error-snackbar']
-    });
-  }
-
-  private showSuccess(message: string): void {
-    this.snackBar.open(message, 'Cerrar', {
-      duration: 2000,
-      panelClass: ['success-snackbar']
-    });
-  }
-
-  // ========== OPERACIONES DE CARRITO ==========
-  agregarAlCarrito(item: CarritoItem): Observable<any> {
-    return this.http.post(`${this.baseUrl}/cart/add/`, {
-      id_destino: item.id_destino,
-      cantidad: item.cantidad,
-      fecha_salida: item.fecha_salida
-    }).pipe(
-      tap(() => this.showSuccess('Item agregado al carrito')),
-      catchError(this.handleError)
+  /**
+   * Obtiene los ítems del carrito de un usuario específico.
+   * Utiliza la acción personalizada `by_user` del CarritoViewSet.
+   * GET /api/v1/carrito/by_user/{userId}/
+   */
+  getCarritoByUserId(userId: number): Observable<CarritoItem[]> {
+    return this.http.get<CarritoItem[]>(`${this.carritoBaseUrl}/by_user/${userId}/`).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
-  obtenerCarrito(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/cart/`).pipe(
-      catchError(this.handleError)
+  /**
+   * Elimina un ítem del carrito.
+   * Utiliza el método DELETE por defecto del CarritoViewSet.
+   * DELETE /api/v1/carrito/{id_compra}/
+   */
+  deleteCarritoItem(id_compra: number): Observable<void> {
+    return this.http.delete<void>(`${this.carritoBaseUrl}/${id_compra}/`).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
-  eliminarItem(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/cart/remove/${id}/`).pipe(
-      tap(() => this.showSuccess('Item eliminado del carrito')),
-      catchError(this.handleError)
+  /**
+   * Actualiza la cantidad y/o la fecha de salida de un ítem del carrito.
+   * Utiliza el método PATCH por defecto del CarritoViewSet.
+   * PATCH /api/v1/carrito/{id_compra}/
+   */
+  updateCarritoItem(id_compra: number, data: { cantidad?: number, fecha_salida?: string }): Observable<CarritoItem> {
+    return this.http.patch<CarritoItem>(`${this.carritoBaseUrl}/${id_compra}/`, data).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
-  actualizarCantidad(id: number, nuevaCantidad: number): Observable<any> {
-    return this.http.put(`${this.baseUrl}/cart/${id}/update-quantity/`, {
-      cantidad: nuevaCantidad
-    }).pipe(
-      tap(() => this.showSuccess('Cantidad actualizada correctamente')),
-      catchError(this.handleError)
+  /**
+   * Agrega un nuevo ítem al carrito o actualiza uno existente.
+   * Utiliza la acción personalizada `add_item` del CarritoViewSet.
+   * POST /api/v1/carrito/add_item/
+   */
+  addItemCarrito(item: CarritoAddItem): Observable<CarritoItem> {
+    return this.http.post<CarritoItem>(`${this.carritoBaseUrl}/add_item/`, item).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
-  actualizarFecha(id: number, nuevaFecha: string): Observable<any> {
-    return this.http.put(`${this.baseUrl}/cart/${id}/update-date/`, {
-      fecha_salida: nuevaFecha
-    }).pipe(
-      tap(() => this.showSuccess('Fecha actualizada correctamente')),
-      catchError(this.handleError)
+  // --- Otros Métodos ---
+
+  /**
+   * Obtiene los detalles de un destino por su ID.
+   * GET /api/v1/destinos/{destinoId}/
+   */
+  getDestinoById(destinoId: number): Observable<Destino> {
+    return this.http.get<Destino>(`${this.destinosBaseUrl}/${destinoId}/`).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
-  // ========== CHECKOUT & PAGOS ==========
-  checkout(id_destino: number, cantidad: number, metodoPagoId: number, itemData?: any): Observable<any> {
+  getMetodosPago(): Observable<MetodoPago[]> {
+    return this.http.get<MetodoPago[]>(this.metodosPagoUrl + '/').pipe( 
+      catchError(error => this.handleError(error))
+    );
+  }
+
+  procesarCheckout(checkoutData: any): Observable<any> {
+    return this.http.post<any>(`${this.checkoutUrl}/`, checkoutData).pipe(
+      catchError(error => this.handleError(error))
+    );
+  }
+
+  /**
+   * Crea una preferencia de pago en Mercado Pago.
+   * Utiliza el endpoint `@csrf_exempt` `create_preference` en tu backend.
+   * POST /api/mercadopago/create_preference/
+   */
+  createMercadoPagoPreference(items: any[], userId: number): Observable<MercadoPagoPreferenceResponse> {
     const payload = {
-      metodo_pago: metodoPagoId,
-      items: [{
-        id_destino,
-        cantidad
-      }]
+      items: items,
+      user_id: userId
     };
-
-    return this.http.post(`${this.baseUrl}/checkout/`, payload).pipe(
-      tap((response: any) => {
-        const itemParaHistorial = {
-          id_destino,
-          cantidad,
-          ...itemData // Incluye nombre, precio e imagen si están disponibles
-        };
-        this.registrarEnHistorial([itemParaHistorial], metodoPagoId);
-        this.showSuccess('Compra realizada con éxito');
-      }),
-      catchError(this.handleError)
+    return this.http.post<MercadoPagoPreferenceResponse>(this.mercadopagoCreatePreferenceUrl, payload).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
-  checkoutMultiple(items: CarritoItem[], metodoPagoId: number): Observable<any> {
-    const payload = {
-      metodo_pago: metodoPagoId,
-      items: items.map(item => ({
-        id_destino: item.id_destino,
-        cantidad: item.cantidad
-      }))
-    };
-
-    return this.http.post(`${this.baseUrl}/checkout/`, payload).pipe(
-      tap((response: any) => {
-        this.registrarEnHistorial(items, metodoPagoId);
-        this.limpiarCarrito().subscribe();
-        this.showSuccess('Compra múltiple realizada con éxito');
-      }),
-      catchError(this.handleError)
+  /**
+   * Obtiene el historial de compras del usuario.
+   * Utiliza el endpoint `listar_compras` en tu backend (ahora `/api/v1/purchases/`).
+   */
+  obtenerHistorialCompras(): Observable<CompraHistorialItem[]> {
+    return this.http.get<CompraHistorialItem[]>(this.historialComprasApiUrl).pipe(
+      catchError(error => this.handleError(error))
     );
   }
 
-  limpiarCarrito(): Observable<any> {
-    return this.obtenerCarrito().pipe(
-      switchMap((items: any[]) => {
-        const deleteObservables = items.map(item => 
-          this.eliminarItem(item.id_compra)
-        );
-        return forkJoin(deleteObservables);
-      }),
-      tap(() => {
-        this.showSuccess('Carrito limpiado correctamente');
-      }),
-      catchError(this.handleError)
-    );
-  }
-
-  // ========== HISTORIAL DE COMPRAS ==========
-  private registrarEnHistorial(
-    items: Array<{id_destino: number, cantidad: number, nombre_Destino?: string, precio_Destino?: number, image?: string}>,
-    metodoPagoId: number
-  ): void {
-    const nuevaCompra: CompraHistorial = {
-      fecha: new Date().toISOString(),
-      items: items.map(item => ({
-        id_destino: item.id_destino,
-        cantidad: item.cantidad,
-        nombre_Destino: item.nombre_Destino,
-        precio_Destino: item.precio_Destino,
-        image: item.image,
-        fecha: new Date().toISOString()
-      })),
-      metodoPagoId,
-      estado: 'completado'
-    };
-
-    const historialActual = this.obtenerHistorial();
-    const nuevoHistorial = [nuevaCompra, ...historialActual];
-    localStorage.setItem(this.historialKey, JSON.stringify(nuevoHistorial));
-  }
-
-  obtenerHistorial(): CompraHistorial[] {
+  obtenerHistorialLocal(): any[] {
+    const historialString = localStorage.getItem('historial_compras_local');
     try {
-      const historialStr = localStorage.getItem(this.historialKey);
-      return historialStr ? JSON.parse(historialStr) : [];
+      return historialString ? JSON.parse(historialString) : [];
     } catch (e) {
-      console.error('Error leyendo historial:', e);
+      console.error('Error al parsear el historial local:', e);
       return [];
     }
   }
 
-  limpiarHistorial(): void {
-    localStorage.removeItem(this.historialKey);
-    this.showSuccess('Historial de compras limpiado');
+  guardarEnHistorialLocal(item: any): void {
+    const historial = this.obtenerHistorialLocal();
+    historial.push(item);
+    localStorage.setItem('historial_compras_local', JSON.stringify(historial));
   }
 
-  // ========== DATOS CATALOGO ==========
-  obtenerDestinos(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/destinos/`).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  obtenerMetodosPago(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/metodos-pago/`).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  listarCompras(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/purchases/`).pipe(
-      catchError(this.handleError)
-    );
-  }
-
-  // ========== HELPERS ==========
-  calcularTotal(items: any[]): number {
-    return items.reduce((total, item) => {
-      const precio = Number(item.precio_Destino) || 0;
-      const cantidad = Number(item.cantidad) || 0;
-      return total + (precio * cantidad);
-    }, 0);
-  }
-
-  formatearFecha(fecha: string): string {
-    if (!fecha) return 'Fecha no disponible';
-    try {
-      return new Date(fecha).toLocaleDateString('es-AR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      console.error('Error al formatear fecha:', e);
-      return fecha;
+  // --- Métodos de Utilidad (puedes personalizarlos con MatSnackBar si lo tienes) ---
+  mostrarAlerta(message: string, type: 'success' | 'error' | 'warning' | 'info' | 'danger'): void {
+    console.log(`ALERTA (${type.toUpperCase()}): ${message}`);
+    // Si estás usando Angular Material SnackBar, descomenta y usa esto:
+    /*
+    let panelClass = '';
+    if (type === 'success') {
+      panelClass = 'snackbar-success';
+    } else if (type === 'error') {
+      panelClass = 'snackbar-error';
+    } else if (type === 'warning') {
+      panelClass = 'snackbar-warning';
+    } else if (type === 'info') {
+      panelClass = 'snackbar-info';
     }
+    this.snackBar.open(message, 'Cerrar', {
+      duration: 5000,
+      horizontalPosition: 'end',
+      verticalPosition: 'top',
+      panelClass: [panelClass]
+    });
+    */
+    // Por ahora, usaremos alert() si no tienes MatSnackBar configurado
+    // alert(`${type.toUpperCase()}: ${message}`); // Línea comentada para eliminar los pop-ups
+  }
+
+  private handleError(error: HttpErrorResponse): Observable<never> {
+    let errorMessage = 'Ocurrió un error desconocido.';
+    let userFriendlyMessage = 'Hubo un problema de comunicación con el servidor.';
+
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = `Error del cliente o de la red: ${error.error.message}`;
+      userFriendlyMessage = 'Parece que hay un problema con tu conexión a internet o el navegador.';
+    } else {
+      console.error(`Código de error del backend: ${error.status}, ` + `Cuerpo: ${JSON.stringify(error.error)}`);
+      errorMessage = `Error del servidor: Código ${error.status}`;
+
+      if (error.error) {
+        if (typeof error.error === 'object') {
+          if (error.error.cantidad && error.error.cantidad.length > 0) {
+            userFriendlyMessage = error.error.cantidad[0];
+          } else if (error.error.detail) {
+            userFriendlyMessage = error.error.detail;
+          } else if (error.error.error) {
+            userFriendlyMessage = error.error.error;
+          } else {
+            userFriendlyMessage = 'Error en la validación de datos. Por favor, revisa la información.';
+            for (const key in error.error) {
+              if (Array.isArray(error.error[key]) && error.error[key].length > 0) {
+                userFriendlyMessage += ` ${key}: ${error.error[key].join(', ')}`;
+              }
+            }
+          }
+        } else if (typeof error.error === 'string') {
+          userFriendlyMessage = error.error;
+        }
+      } else {
+        userFriendlyMessage = `Error ${error.status}: El servidor no pudo procesar la solicitud.`;
+      }
+    }
+    
+    this.mostrarAlerta(userFriendlyMessage, 'error'); // Aquí todavía se llama a mostrarAlerta
+    
+    return throwError(() => new Error(errorMessage));
   }
 }

@@ -1,379 +1,478 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { CarritoService } from '../../services/carrito.service';
-import { Destino } from '../../models/destinos';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
-import { forkJoin, Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
+// Importamos todas las interfaces desde carrito.service para consistencia
+import { CarritoService, CarritoItem, CarritoAddItem, MetodoPago, Destino } from '../../services/carrito.service'; 
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http'; // Importa HttpErrorResponse
+import { forkJoin, of } from 'rxjs'; // Importar operadores de RxJS
+import { switchMap, catchError, map } from 'rxjs/operators'; // Importar operadores de RxJS
+
+declare var bootstrap: any; // Declaramos bootstrap para usar sus funciones de modal
 
 @Component({
   selector: 'app-destinos-cart',
   standalone: true,
-  imports: [CommonModule,FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe],
   templateUrl: './destinos-cart.component.html',
   styleUrls: ['./destinos-cart.component.css']
 })
 export class DestinosCartComponent implements OnInit {
-  carritoItems: any[] = [];
-  destinos: Destino[] = []; // Aunque se obtiene, no parece usarse directamente en la plantilla actual para cada item del carrito.
-  total: number = 0;
-  defaultImage = 'url_de_imagen_por_defecto'; // Considera reemplazar esta URL con una imagen por defecto real
-  metodosPago: any[] = [];
-  metodoPagoSeleccionado: string = ''; // Es un string porque viene del value de un select HTML
-  selectAll: boolean = false; // Property for the "Select All" checkbox
+  carritoItems: CarritoItem[] = [];
+  metodosPago: MetodoPago[] = [];
+  metodoPagoSeleccionado: number | null = null;
+  total: number = 0; // Total general del carrito (de ítems seleccionados)
+  defaultImage: string = 'https://placehold.co/400x300/E0E0E0/4F4F4F?text=No+Image'; // Imagen por defecto
 
-  constructor(private carritoService: CarritoService, private router: Router) {}
+  destinoSeleccionado: Destino | null = null;
+  cantidadSeleccionada: number = 1;
+  precioTotalModal: number = 0;
+  agregandoAlCarrito: boolean = false;
+  private destinoModal: any;
+
+  // Propiedad 'userId' declarada explícitamente y tipada
+  userId: number | null = null; 
+
+  selectAll: boolean = true; // Estado del checkbox "Seleccionar Todo"
+  isLoading: boolean = false; // Nuevo: Para manejar el estado de carga
+  errorMessage: string | null = null; // Nuevo: Para mostrar errores al usuario
+
+  constructor(
+    private carritoService: CarritoService,
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
-    this.obtenerCarrito();
-    // obtenerDestinos() ya no es estrictamente necesario en ngOnInit si combinarDatos se maneja con la respuesta de obtenerCarrito
-    // pero lo mantengo por si se usa en otra parte o para una futura mejora
-    this.obtenerDestinos();
-    this.obtenerMetodosPago();
-  }
+    this.isLoading = true; // Inicia el estado de carga
+    
+    // CORREGIDO: Asumimos que getLoggedInUserId() devuelve directamente un number | null
+    const loggedInUserId = this.authService.getLoggedInUserId(); 
 
-  obtenerMetodosPago(): void {
-    this.carritoService.obtenerMetodosPago().subscribe({
-      next: (metodos: any[]) => {
-        this.metodosPago = metodos;
-        // Asegurarse de que el método de pago seleccionado sea numérico if el value en el HTML es string
-        // Esto se manejará en la función checkout
-      },
-      error: (error: any) => {
-        console.error('Error al obtener los métodos de pago', error);
-      }
-    });
-  }
-
-  obtenerCarrito(): void {
-    this.carritoService.obtenerCarrito().subscribe({
-      next: (items: any[]) => {
-        // Suponiendo que la respuesta del backend incluye id_destino, cantidad, precio_Destino, image, descripcion, fecha_salida y id_compra
-        this.carritoItems = items.map(item => ({
-          ...item,
-          cantidad: Number(item.cantidad), // Asegúrate de que cantidad sea un número
-          selected: true // Add 'selected' property and set to true by default
-          // Si la fecha_salida viene como string en el formato correcto, se usará directamente
-          // Si item ya incluye nombre_Destino, image, descripcion y precio_Destino del backend /cart/,
-          // la llamada a obtenerDestinos y combinarDatos podría simplificarse o eliminarse.
-          // Por ahora, mantenemos combinarDatos por si /cart/ no trae toda la info del destino.
-        }));
-         // Llama a combinarDatos después de obtener los ítems del carrito
-        this.combinarDatos();
-        this.selectAll = true; // Set "Select All" to true initially
-      },
-      error: (error: any) => {
-        console.error('Error al obtener el carrito', error);
-        this.carritoItems = []; // Limpiar el carrito si hay un error al obtenerlo
-        this.calcularTotal(); // Recalcular total (será 0)
-        this.selectAll = false; // Set "Select All" to false if cart is empty
-      }
-    });
-  }
-
-  // Esta función combina los detalles completos del destino con los ítems del carrito.
-  // Es útil si la respuesta de /cart/ solo trae id_destino y cantidad, y necesitas
-  // precio_Destino, nombre, descripción, etc., de /destinos/.
-  // If /cart/ already trae todos los detalles del destino, esta función y obtenerDestinos() podrían no ser necesarios.
-  combinarDatos(): void {
-    // Solo combinar si hay ítems en el carrito Y destinos cargados
-    if (this.carritoItems.length > 0 && this.destinos.length > 0) {
-      this.carritoItems.forEach(item => {
-        // Busca el destino completo en la lista de destinos cargada
-        const destino = this.destinos.find(d => d.id_destino === item.id_destino);
-        if (destino) {
-          // Agrega los detalles del destino al ítem del carrito si no están ya presentes
-          item.nombre_Destino = item.nombre_Destino || destino.nombre_Destino;
-          item.descripcion = item.descripcion || destino.descripcion;
-          item.image = item.image || destino.image; // Si item.image es null or undefined, usa destino.image
-          item.precio_Destino = item.precio_Destino || destino.precio_Destino; // Asegúrate de tener el precio aquí
-
-          // Asegúrate de que la fecha de salida estÃ© presente si no vino en la respuesta del carrito
-          // Si la fecha viene del backend en el item del carrito, usala. Si no, podrías establecer una por defecto.
-          // item.fecha_salida = item.fecha_salida || 'Fecha no disponible'; // Ejemplo si no viene del backend
-        } else {
-           console.warn(`Detalles del destino con ID ${item.id_destino} no encontrados.`);
-           // Manejar el caso donde el destino no se encuentra (ej. eliminar el ítem o mostrar un error)
-        }
-      });
-      this.calcularTotal(); // Recalcular el total después de combinar datos
-    } else if (this.carritoItems.length > 0 && this.destinos.length === 0) {
-       console.warn('Hay ítems en el carrito pero no se cargaron los destinos. No se pueden combinar datos.');
-       this.calcularTotal(); // Calcular total solo con los datos disponibles si no se pueden combinar
+    if (loggedInUserId) {
+      this.userId = loggedInUserId; // Asigna el ID del usuario
+      this.loadAllData(); // Carga todos los datos necesarios
     } else {
-      this.total = 0; // Si no hay ítems en el carrito, el total es 0
+      this.errorMessage = "Debes iniciar sesión para ver tu carrito.";
+      this.isLoading = false; // Finaliza el estado de carga
+      this.router.navigate(['/login']); // Redirige si no está logueado
     }
-  }
 
-
-  // Método para obtener la lista completa de destinos (usado por combinarDatos si es necesario)
-  obtenerDestinos(): void {
-    this.carritoService.obtenerDestinos().subscribe({
-      next: (destinos: Destino[]) => {
-        this.destinos = destinos;
-         // Llama a combinarDatos después de obtener los destinos
-        this.combinarDatos();
-      },
-      error: (error: any) => {
-        console.error('Error al obtener los destinos', error);
-        this.destinos = []; // Limpiar destinos si hay un error al obtenerlos
-        this.combinarDatos(); // Intentar combinar con la lista de destinos vacía (no hará nada)
+    // Inicializa el modal después de que el DOM esté listo
+    setTimeout(() => {
+      const modalElement = document.getElementById('destinoModal');
+      if (modalElement) {
+        this.destinoModal = new bootstrap.Modal(modalElement);
       }
-    });
+    }, 0);
   }
 
-
-  eliminarItem(id: number): void {
-    this.carritoService.eliminarItem(id).subscribe({
-      next: () => {
-        this.obtenerCarrito(); // Recargar el carrito después de eliminar
-      },
-      error: (error: any) => {
-        console.error('Error al eliminar el item del carrito', error);
-        alert('Error al eliminar el ítem. Inténtelo de nuevo.');
-      }
-    });
-  }
-
-  // Actualiza la cantidad de un ítem en el backend y recalcula el total
-  actualizarCantidad(item: any, nuevaCantidad: number): void {
-    if (item.id_compra === undefined) {
-      console.error('El id del item está undefined:', item);
-      // Considerar eliminar este ítem del array carritoItems si no tiene id_compra
+  // --- FUNCIÓN PARA CARGAR TODOS LOS DATOS CON STOCK ---
+  loadAllData(): void {
+    // Solo carga si userId está definido
+    if (this.userId === null) { 
+      // Esto debería ser manejado por ngOnInit antes de llamar a loadAllData,
+      // pero es una seguridad adicional.
+      this.isLoading = false; 
       return;
     }
+    this.isLoading = true;
+    this.errorMessage = null;
 
-    // Asegurarse de que la nueva cantidad sea un número entero positivo
-    nuevaCantidad = Math.max(1, Math.floor(Number(nuevaCantidad)));
+    forkJoin([
+      this.carritoService.getCarritoByUserId(this.userId),
+      this.carritoService.getMetodosPago()
+    ]).pipe(
+      switchMap(([carritoResponse, metodosPagoResponse]) => { // Ahora `metodosPagoResponse` será `MetodoPago[]`
+        this.metodosPago = metodosPagoResponse;
+        if (this.metodosPago.length > 0 && this.metodoPagoSeleccionado === null) {
+          this.metodoPagoSeleccionado = this.metodosPago[0].id_metodoPago; // Selecciona el primero por defecto si no hay uno
+        }
 
-    // Si la cantidad no ha cambiado o es inválida (aunque Math.max(1, ...) lo previene), no hacer la llamada API
-    if (nuevaCantidad === item.cantidad) {
-        return;
-    }
-
-    // Opcional: Deshabilitar botones de cantidad o mostrar un spinner mientras actualiza
-    // item.updatingQuantity = true; // You can add this property to the item
-
-    this.carritoService.actualizarCantidad(item.id_compra, nuevaCantidad).subscribe({
-      next: () => {
-        item.cantidad = nuevaCantidad; // Actualiza la cantidad localmente
-        this.calcularTotal(); // Recalcula el total del carrito
-        // item.updatingQuantity = false; // Habilitar botones o ocultar spinner
-      },
-      error: (error: any) => {
-        console.error('Error al actualizar la cantidad del item', error);
-        alert('Error al actualizar la cantidad. Inténtelo de nuevo.');
-        // item.updatingQuantity = false; // Habilitar botones o ocultar spinner
-        // Opcional: Revertir la cantidad local a item.cantidad original si la llamada falla
-      }
-    });
-  }
-
-  // Calcula el total sumando el precio total de cada ítem seleccionado
-  calcularTotal(): void {
-      this.total = this.carritoItems.reduce((sum, item) =>
-        sum + (item.selected ? (Number(item.precio_Destino) || 0) * (Number(item.cantidad) || 0) : 0), 0);
-  }
-
-  // Handle individual checkbox change and update total
-  updateTotal(): void {
-    this.calcularTotal();
-    // Update "Select All" checkbox state based on individual checkboxes
-    this.selectAll = this.carritoItems.every(item => item.selected);
-  }
-
-  // Handle "Select All" checkbox change
-  toggleSelectAll(): void {
-    this.carritoItems.forEach(item => item.selected = this.selectAll);
-    this.calcularTotal();
-  }
-
-
-  // Método para proceder al checkout de los ítems seleccionados
-  checkout(): void {
-    if (!this.metodoPagoSeleccionado) {
-      alert('Por favor, seleccione un método de pago.');
-      return;
-    }
-
-    const selectedItems = this.carritoItems.filter(item => item.selected);
-
-    if (selectedItems.length === 0) {
-      alert('No hay ítems seleccionados en tu carrito para proceder al checkout.');
-      return;
-    }
-
-
-    // Convertir el id del mÃ©todo de pago a nÃºmero
-    const metodoPagoIdNumerico = Number(this.metodoPagoSeleccionado);
-    if (isNaN(metodoPagoIdNumerico) || metodoPagoIdNumerico <= 0) { // Validar que sea un nÃºmero positivo
-      console.error('MÃ©todo de pago seleccionado no es un nÃºmero vÃ¡lido:', this.metodoPagoSeleccionado);
-      alert('Error: El mÃ©todo de pago seleccionado no es vÃ¡lido.');
-      return;
-    }
-
-    // Array para almacenar los Observables de cada compra individual
-    const checkoutObservables: Observable<any>[] = [];
-
-    selectedItems.forEach(item => {
-      // Para cada Ã\u00adtems seleccionado en el carrito, creamos un Observable de compra individual
-      // Usamos los datos id_destino y cantidad del Ã\u00adtem, y el mÃ©todo de pago seleccionado
-      if (item.id_destino && item.cantidad > 0) { // Validar que el Ã\u00adtem tenga un id_destino y cantidad vÃ¡lida
-         checkoutObservables.push(
-            this.carritoService.checkout(item.id_destino, item.cantidad, metodoPagoIdNumerico).pipe(
-              tap(response => {
-                console.log(`Compra de destino ${item.nombre_Destino || item.id_destino} (x${item.cantidad}) exitosa:`, response);
-                // AquÃ\u00ad podrÃ\u00adas eliminar el Ã\u00adtem del carrito localmente si la compra fue exitosa
-                // o dejar que la llamada a obtenerCarrito() despuÃ©s del forkJoin actualice el estado
-              }),
-              catchError(error => {
-                console.error(`Error al comprar destino ${item.nombre_Destino || item.id_destino} (x${item.cantidad}):`, error);
-                // Devolver un observable que emite un valor (p.ej., un objeto con 'success: false')
-                // para que forkJoin no falle por completo si una sola compra falla.
-                // Incluimos el Ã\u00adtem en el objeto de error para referencia
-                return of({ success: false, item: item, error: error });
+        if (carritoResponse && carritoResponse.length > 0) {
+          const destinoRequests = carritoResponse.map(item => 
+            this.carritoService.getDestinoById(item.id_destino).pipe(
+              catchError((err: HttpErrorResponse) => {
+                console.error(`Error al cargar detalles del destino ${item.id_destino}:`, err);
+                // Retornar un objeto Destino completo para evitar errores de tipo
+                return of<Destino>({ 
+                  id_destino: item.id_destino, 
+                  cantidad_Disponible: 0, 
+                  precio_Destino: item.precio_Destino, 
+                  nombre_Destino: item.nombre_Destino,
+                  descripcion: '', 
+                  image: '', 
+                  fecha_salida: '', 
+                  mostrarSoldOut: false, 
+                  estaVigente: false, 
+                  tieneCupo: false 
+                }); 
               })
             )
           );
-      } else {
-         console.warn('Ã\u00adtem invÃ¡lido en el carrito, omitiendo checkout:', item);
-         // Considerar mostrar una alerta al usuario sobre Ã\u00adtems invÃ¡lidos
+          return forkJoin(destinoRequests).pipe(
+            map((destinos: Destino[]) => { // Tipado explícito para 'destinos'
+              return carritoResponse.map((item: CarritoItem) => { // Tipado explícito para 'item'
+                const destinoDetalles = destinos.find(d => d.id_destino === item.id_destino);
+                return {
+                  ...item,
+                  cantidad: Number(item.cantidad), // <--- ¡CORRECCIÓN CLAVE AQUÍ: Asegurarse que item.cantidad sea número!
+                  cantidad_Disponible: destinoDetalles?.cantidad_Disponible || 0,
+                  precio_Destino: destinoDetalles?.precio_Destino || item.precio_Destino, 
+                  selected: this.selectAll 
+                };
+              });
+            })
+          );
+        } else {
+          return of([]); 
+        }
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al cargar datos del carrito o métodos de pago:', error);
+        this.errorMessage = 'Hubo un error al cargar tu carrito o los métodos de pago. Por favor, inténtalo de nuevo.';
+        this.isLoading = false;
+        return of([]);
+      })
+    ).subscribe(
+      (itemsConStock: CarritoItem[]) => { // Tipado para itemsConStock
+        this.carritoItems = itemsConStock;
+        this.updateTotal(); 
+        this.isLoading = false;
+      },
+      (error: HttpErrorResponse) => {
+        console.error('Error final en subscribe (loadAllData):', error);
+        this.errorMessage = 'Hubo un error al cargar el carrito.';
+        this.isLoading = false;
       }
+    );
+  }
+
+  /**
+   * Actualiza la cantidad de un ítem en el carrito.
+   * @param item El ítem del carrito a actualizar.
+   * @param nuevaCantidad La nueva cantidad deseada.
+   */
+  actualizarCantidad(item: CarritoItem, nuevaCantidad: number): void {
+    this.errorMessage = null;
+
+    // Asegurarse de que nuevaCantidad sea un número y no sea menor que 1
+    nuevaCantidad = Number(nuevaCantidad); // <--- ¡CORRECCIÓN CLAVE AQUÍ: Asegurarse que nuevaCantidad sea número!
+    if (nuevaCantidad < 1) {
+      nuevaCantidad = 1;
+    }
+    
+    console.log('Validando cantidad (Cliente - TIPOS):', {
+      nuevaCantidad: nuevaCantidad, typeof_nuevaCantidad: typeof nuevaCantidad,
+      cantidadDisponibleItem: item.cantidad_Disponible, typeof_cantidadDisponibleItem: typeof item.cantidad_Disponible,
+      nombreDestino: item.nombre_Destino,
+      itemCantidadActual: item.cantidad, typeof_itemCantidadActual: typeof item.cantidad 
     });
 
+    // Validación del lado del cliente
+    if (item.cantidad_Disponible !== undefined && nuevaCantidad > item.cantidad_Disponible) {
+      this.carritoService.mostrarAlerta(
+        `Solo quedan ${item.cantidad_Disponible} cupos disponibles para ${item.nombre_Destino}.`,
+        'warning'
+      );
+      console.error('VALIDACIÓN CLIENTE: Cantidad solicitada excede el stock disponible. Solicitud no enviada.'); // Mensaje de depuración
+      return; // ESTO DEBERÍA DETENER LA SOLICITUD
+    }
 
-    // Ejecutar todas las llamadas de checkout concurrentemente si hay observables vÃ¡lidos
-    if (checkoutObservables.length > 0) {
-        // Opcional: Mostrar un spinner global mientras se procesa el checkout
-        // this.processingCheckout = true;
+    if (nuevaCantidad === item.cantidad) {
+      console.log('La cantidad es la misma, no se realiza la actualización.');
+      return; 
+    }
 
-        forkJoin(checkoutObservables).subscribe({
-          next: (results) => {
-            // this.processingCheckout = false; // Ocultar spinner
+    if (item.id_compra) {
+      console.log(`Enviando solicitud PATCH al backend para item ${item.id_compra} con nueva cantidad: ${nuevaCantidad}`);
+      this.carritoService.updateCarritoItem(item.id_compra, { cantidad: nuevaCantidad }).subscribe({
+        next: (updatedItem: CarritoItem) => {
+          item.cantidad = updatedItem.cantidad; 
+          this.updateTotal();
+          console.log(`Cantidad actualizada para el item ${item.id_compra} a ${updatedItem.cantidad}`);
+          this.carritoService.mostrarAlerta('Cantidad actualizada correctamente.', 'success');
+          this.loadAllData(); // Recargar todos los datos, incluyendo el stock
+        },
+        error: (error: HttpErrorResponse) => {
+          console.error('Error al actualizar cantidad del ítem (Backend):', error); // Mensaje más específico
+          this.loadAllData(); 
 
-            let allSuccessful = true;
-            let successCount = 0;
-            let errorCount = 0;
-            const failedItems: any[] = []; // Para listar los Ã\u00adtems que fallaron
-
-            results.forEach(result => {
-              if (result && result.success === false) {
-                allSuccessful = false;
-                errorCount++;
-                if (result.item) {
-                    failedItems.push(result.item);
-                }
-              } else {
-                successCount++;
-              }
-            });
-
-            // Construir mensaje de alerta basado en los resultados
-            let alertMessage = '';
-            let alertType = '';
-
-            if (allSuccessful) {
-              alertMessage = 'Todos los ítems seleccionados comprados con éxito.';
-              alertType = 'success';
-            } else {
-               alertMessage = `Se compraron ${successCount} de ${selectedItems.length} ítems seleccionados.`;
-               if (errorCount > 0) {
-                 alertMessage += ` Fallaron ${errorCount} ítems.`;
-                 // Puedes añadir detalles de los ítems fallidos al mensaje si lo deseas
-                 // alertMessage += ' Ítems fallidos: ' + failedItems.map(item => item.nombre_Destino || item.id_destino).join(', ');
-                 alertMessage += ' Revisa la consola para más detalles específicos de cada fallo.';
-               }
-               alertType = successCount > 0 ? 'warning' : 'danger'; // warning si algunos pasaron, danger si fallaron todos
-            }
-
-            alert(alertMessage); // Mostrar alerta con el resumen
-
-            // DespuÃ©s de intentar todas las compras, recargamos el carrito.
-            // Si el backend elimina los Ã\u00adtems comprados exitosamente, esto limpiarÃ¡ el carrito
-            // o dejarÃ¡ solo los Ã\u00adtems fallidos.
-            this.obtenerCarrito();
-
-            // Si todas las compras fueron exitosas, redirigimos
-            if (allSuccessful) {
-               this.router.navigate(['/destinos']); // Redirigir a la pÃ¡gina de destinos
-            }
-             // Si hubo fallos, nos quedamos en la pÃ¡gina del carrito (que se refrescarÃ¡ con obtenerCarrito)
-
-
-          },
-          error: (err) => {
-            // Este bloque solo se ejecutarÃ\u00ada si forkJoin falla por una razÃ³n general (ej. problema de red serio),
-            // no si las llamadas individuales fallan y se manejan con catchError.
-            console.error('Error inesperado en el proceso de checkout:', err);
-            alert('Error general al intentar finalizar la compra. IntÃ©ntelo de nuevo.');
-            // this.processingCheckout = false; // Ocultar spinner
-             this.obtenerCarrito(); // Intentar refrescar el carrito incluso en caso de error general
+          let userFriendlyMessage = 'Hubo un error al actualizar la cantidad.';
+          if (error.error && typeof error.error === 'object' && error.error.cantidad && error.error.cantidad.length > 0) {
+            userFriendlyMessage = error.error.cantidad[0];
+          } else if (error.message) {
+            userFriendlyMessage = error.message;
           }
-        });
-    } else {
-        console.warn("No hay observables de checkout vÃ¡lidos para procesar.");
-        alert('No hay ítems seleccionados en el carrito para comprar.');
-        // No need to call obtenerCarrito() here as selectedItems was already checked
+          this.carritoService.mostrarAlerta(`Error: ${userFriendlyMessage}`, 'error');
+        }
+      });
     }
   }
 
-  // Nuevo método para comprar un solo ítem
-  buyNow(item: any): void {
-    if (!this.metodoPagoSeleccionado) {
-      alert('Por favor, seleccione un método de pago.');
-      return;
-    }
-
-    // Convertir el id del método de pago a número
-    const metodoPagoIdNumerico = Number(this.metodoPagoSeleccionado);
-    if (isNaN(metodoPagoIdNumerico) || metodoPagoIdNumerico <= 0) { // Validar que sea un número positivo
-      console.error('Método de pago seleccionado no es un número válido:', this.metodoPagoSeleccionado);
-      alert('Error: El método de pago seleccionado no es válido.');
-      return;
-    }
-
-    // Validar que el ítem tenga los datos necesarios
-    if (!item.id_destino || item.cantidad <= 0) {
-      console.warn('Ítem inválido para comprar ahora:', item);
-      alert('No se puede comprar este ítem. Datos incompletos o cantidad inválida.');
-      return;
-    }
-
-    // Realizar el checkout para el single item
-    this.carritoService.checkout(item.id_destino, item.cantidad, metodoPagoIdNumerico).subscribe({
-      next: (response) => {
-        console.log(`Compra de destino ${item.nombre_Destino || item.id_destino} (x${item.cantidad}) exitosa:`, response);
-        alert(`¡Compra de "${item.nombre_Destino || 'ítem'}" realizada con éxito!`);
-        this.obtenerCarrito(); // Recargar el carrito después de la compra exitosa
-        this.router.navigate(['/destinos']); // Redirigir a la página de destinos
-      },
-      error: (error) => {
-        console.error(`Error al comprar destino ${item.nombre_Destino || item.id_destino} (x${item.cantidad}):`, error);
-        alert('Error al realizar la compra. Inténtelo de nuevo.');
-      }
-    });
+  incrementarCantidad(item: CarritoItem): void {
+    this.actualizarCantidad(item, item.cantidad + 1);
   }
 
+  decrementarCantidad(item: CarritoItem): void {
+    this.actualizarCantidad(item, item.cantidad - 1);
+  }
 
-  // ELIMINADO: Este mÃ©todo ya no es necesario porque la fecha no es editable por el usuario.
-  /*
-  actualizarFecha(item: any): void {
-    if (item.id_compra === undefined) {
-      console.error('El id del item estÃ¡ undefined:', item);
-      return;
-    }
-
-    const nuevaFecha = item.fecha_salida;
-    this.carritoService.actualizarFecha(item.id_compra, nuevaFecha).subscribe({
+  /**
+   * Elimina un ítem específico del carrito.
+   * @param id_compra El ID del ítem de compra a eliminar.
+   */
+  eliminarItem(id_compra: number): void {
+    this.isLoading = true;
+    this.errorMessage = null;
+    this.carritoService.deleteCarritoItem(id_compra).subscribe({
       next: () => {
-        item.fecha_salida = nuevaFecha; // Actualiza la fecha localmente
-        console.log('Fecha de salida actualizada:', nuevaFecha);
+        console.log('Ítem eliminado con éxito');
+        this.carritoService.mostrarAlerta('Ítem eliminado correctamente.', 'success');
+        this.loadAllData(); 
       },
-      error: (error: any) => {
-        console.error('Error al actualizar la fecha de salida', error);
+      error: (error: HttpErrorResponse) => {
+        console.error('Error al eliminar ítem:', error);
+        this.errorMessage = 'Hubo un error al eliminar el ítem del carrito.';
+        this.isLoading = false;
+        this.carritoService.mostrarAlerta('Error al eliminar ítem.', 'error');
       }
     });
   }
-  */
+
+  /**
+   * Actualiza el total del carrito sumando los precios de los ítems seleccionados.
+   */
+  updateTotal(): void {
+    this.total = this.carritoItems
+      .filter((item: CarritoItem) => item.selected)
+      .reduce((sum: number, item: CarritoItem) => sum + (item.precio_Destino * item.cantidad), 0);
+  }
+
+  /**
+   * Alterna la selección de todos los elementos del carrito.
+   */
+  toggleSelectAll(): void {
+    this.carritoItems.forEach(item => item.selected = this.selectAll);
+    this.updateTotal(); 
+  }
+
+  /**
+   * Prepara y muestra el modal para "Comprar ahora" un destino específico.
+   * @param item El ítem del carrito que se desea comprar individualmente.
+   */
+  buyNow(item: CarritoItem): void {
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    this.carritoService.getDestinoById(item.id_destino).subscribe({
+      next: (destinoData: Destino) => {
+        this.destinoSeleccionado = destinoData;
+        
+        if (this.destinoSeleccionado.cantidad_Disponible <= 0) {
+          this.destinoSeleccionado.mostrarSoldOut = true; 
+          this.cantidadSeleccionada = 0;
+        } else {
+          this.cantidadSeleccionada = 1;
+        }
+
+        this.updatePrecioTotalModal();
+        if (this.destinoModal) {
+          this.destinoModal.show();
+        }
+        this.isLoading = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error al cargar detalles del destino para BuyNow:', error);
+        this.carritoService.mostrarAlerta('Error al cargar la información del destino.', 'error');
+        this.isLoading = false;
+      }
+    });
+  }
+
+  /**
+   * Decrementa la cantidad seleccionada en el modal de compra individual.
+   */
+  decrementarCantidadModal(): void {
+    if (this.cantidadSeleccionada > 1) {
+      this.cantidadSeleccionada--;
+      this.updatePrecioTotalModal();
+    }
+  }
+
+  /**
+   * Incrementa la cantidad seleccionada en el modal de compra individual.
+   */
+  incrementarCantidadModal(): void {
+    if (this.destinoSeleccionado && this.cantidadSeleccionada < this.destinoSeleccionado.cantidad_Disponible) {
+      this.cantidadSeleccionada++;
+      this.updatePrecioTotalModal();
+    } else if (this.destinoSeleccionado) {
+        this.carritoService.mostrarAlerta('No hay más cupos disponibles para este destino.', 'warning');
+    }
+  }
+
+  /**
+   * Maneja el cambio manual de cantidad en el input del modal.
+   * @param event El evento del input.
+   */
+  onCantidadChange(event: Event): void {
+    const inputElement = event.target as HTMLInputElement;
+    let value = parseInt(inputElement.value, 10);
+
+    if (isNaN(value) || value < 1) {
+      value = 1;
+    }
+    if (this.destinoSeleccionado && value > this.destinoSeleccionado.cantidad_Disponible) {
+      value = this.destinoSeleccionado.cantidad_Disponible;
+      this.carritoService.mostrarAlerta(`Solo quedan ${this.destinoSeleccionado.cantidad_Disponible} cupos.`, 'warning');
+    }
+    this.cantidadSeleccionada = value;
+    this.updatePrecioTotalModal();
+  }
+
+  /**
+   * Actualiza el precio total mostrado en el modal de compra individual.
+   */
+  updatePrecioTotalModal(): void {
+    if (this.destinoSeleccionado) {
+      this.precioTotalModal = this.destinoSeleccionado.precio_Destino * this.cantidadSeleccionada;
+    } else {
+      this.precioTotalModal = 0;
+    }
+  }
+
+  /**
+   * Cierra el modal de compra individual y reinicia sus propiedades.
+   */
+  cerrarModal(): void {
+    if (this.destinoModal) {
+      this.destinoModal.hide();
+    }
+    this.destinoSeleccionado = null;
+    this.cantidadSeleccionada = 1;
+    this.precioTotalModal = 0;
+    this.agregandoAlCarrito = false;
+  }
+
+  /**
+   * Confirma la adición de un destino al carrito desde el modal.
+   */
+  agregarAlCarritoConfirmado(): void {
+    this.agregandoAlCarrito = true;
+    const userId = this.authService.getLoggedInUserId(); 
+
+    if (!this.destinoSeleccionado || !this.destinoSeleccionado.id_destino) {
+      console.error('Error: No hay destino seleccionado o ID de destino al intentar agregar al carrito.');
+      this.carritoService.mostrarAlerta('Error: No se pudo identificar el destino.', 'error');
+      this.agregandoAlCarrito = false;
+      return;
+    }
+
+    if (!userId) { 
+      console.error('Usuario no autenticado.');
+      this.carritoService.mostrarAlerta('Debes iniciar sesión para agregar ítems al carrito.', 'info');
+      this.agregandoAlCarrito = false;
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    if (this.metodoPagoSeleccionado === null) {
+        this.carritoService.mostrarAlerta('Por favor, selecciona un método de pago antes de agregar al carrito.', 'warning');
+        this.agregandoAlCarrito = false;
+        return;
+    }
+
+    const item: CarritoAddItem = {
+      id_destino: this.destinoSeleccionado.id_destino,
+      cantidad: this.cantidadSeleccionada,
+      fecha_salida: typeof this.destinoSeleccionado.fecha_salida === 'string'
+        ? this.destinoSeleccionado.fecha_salida
+        : this.destinoSeleccionado.fecha_salida?.toISOString(),
+      id_metodoPago: this.metodoPagoSeleccionado
+    };
+
+    this.carritoService.addItemCarrito(item).subscribe({
+      next: (response: CarritoItem) => {
+        console.log('Item agregado al carrito:', response);
+        this.carritoService.mostrarAlerta('El destino se agregó al carrito correctamente.', 'success');
+        this.agregandoAlCarrito = false;
+        this.cerrarModal();
+        this.loadAllData(); 
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error al agregar ítem al carrito (Backend):', error);
+        let userFriendlyMessage = 'Hubo un error al agregar el destino al carrito.';
+        if (error.error && typeof error.error === 'object' && error.error.cantidad && error.error.cantidad.length > 0) {
+            userFriendlyMessage = error.error.cantidad[0];
+        } else if (error.message) {
+            userFriendlyMessage = error.message;
+        }
+        this.carritoService.mostrarAlerta(userFriendlyMessage, 'error');
+        this.agregandoAlCarrito = false;
+      }
+    });
+  }
+
+  /**
+   * Inicia el proceso de checkout para los ítems seleccionados.
+   */
+  checkout(): void {
+    const userId = this.authService.getLoggedInUserId(); 
+    if (!userId) { 
+      console.error('Usuario no autenticado para el checkout.');
+      this.carritoService.mostrarAlerta('Debes iniciar sesión para finalizar tu compra.', 'info');
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    const itemsToCheckout = this.carritoItems.filter((item: CarritoItem) => item.selected);
+
+    if (itemsToCheckout.length === 0) {
+      this.carritoService.mostrarAlerta('Por favor, selecciona al menos un destino para proceder al checkout.', 'warning');
+      return;
+    }
+
+    if (!this.metodoPagoSeleccionado) {
+      this.carritoService.mostrarAlerta('Por favor, selecciona un método de pago.', 'warning');
+      return;
+    }
+
+    const mercadopagoItems = itemsToCheckout.map(item => ({
+      title: item.nombre_Destino,
+      quantity: item.cantidad,
+      unit_price: item.precio_Destino,
+      currency_id: 'ARS',
+      description: item.descripcion,
+      id_destino: item.id_destino
+    }));
+
+    this.carritoService.createMercadoPagoPreference(mercadopagoItems, userId).subscribe({
+      next: (preferenceResponse: any) => {
+        const initPoint = preferenceResponse.init_point;
+        if (initPoint) {
+          window.location.href = initPoint;
+        } else {
+          console.error('No se recibió el init_point de Mercado Pago:', preferenceResponse);
+          this.carritoService.mostrarAlerta('No se pudo iniciar el proceso de pago con Mercado Pago.', 'error');
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error al crear la preferencia de Mercado Pago (Backend):', error); // Mensaje más específico
+        let userFriendlyMessage = 'Hubo un error al preparar el pago con Mercado Pago. Inténtalo de nuevo.';
+        if (error.error && typeof error.error === 'object' && error.error.error) {
+            userFriendlyMessage = error.error.error;
+        } else if (error.message) {
+            userFriendlyMessage = error.message;
+        }
+        this.carritoService.mostrarAlerta(userFriendlyMessage, 'error');
+      }
+    });
+  }
+
+  // Usamos id_compra como identificador único para trackBy
+  trackById(index: number, item: CarritoItem): number {
+    return item.id_compra; 
+  }
 }
