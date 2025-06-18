@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core'; // Ya no se necesita ChangeDetectorRef
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { HttpClientModule, HttpErrorResponse } from '@angular/common/http';
@@ -7,15 +7,11 @@ import { DestinosService } from '../../services/destinos.service';
 import { CarritoService, MetodoPago } from '../../services/carrito.service';
 import { Destino } from '../../models/destinos';
 import { AuthService } from '../../services/auth.service';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators'; // 'tap' no se está usando aquí, se puede eliminar si no se usa en otra parte
-import { MessageService } from '../../services/message.service'; // Importa tu servicio de mensajes
+import { AlertaComponent } from '../../alerta/alerta.component';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
-// NOTA: 'declare var bootstrap: any;' SOLO es necesario si interactúas directamente
-// con componentes de Bootstrap JS (como 'new bootstrap.Modal()').
-// Si solo usas el modal, puedes mantenerla. Si no, se puede eliminar.
 declare var bootstrap: any;
-
 
 @Component({
   selector: 'app-destinos',
@@ -25,6 +21,7 @@ declare var bootstrap: any;
     RouterModule,
     HttpClientModule,
     FormsModule,
+    AlertaComponent,
     CurrencyPipe
   ],
   templateUrl: './destinos.component.html',
@@ -33,23 +30,22 @@ declare var bootstrap: any;
 export class DestinosComponent implements OnInit {
   destinosList: Destino[] = [];
   titulo: string = "Nuestros Destinos";
-  // Eliminadas: tipoAlerta: string = ''; mensajeAlerta: string = '';
+  tipoAlerta: string = '';
+  mensajeAlerta: string = '';
   destinoSeleccionado: Destino | null = null;
   cantidadSeleccionada: number = 1;
   precioTotalModal: number = 0;
   agregandoAlCarrito: boolean = false;
-
   metodosPago: MetodoPago[] = [];
   metodoPagoSeleccionado: number | null = null;
-
-  private modal: any; // Para almacenar la instancia del modal de Bootstrap
+  private modal: any;
 
   constructor(
     private destinosService: DestinosService,
     private carritoService: CarritoService,
     private authService: AuthService,
     private router: Router,
-    private messageService: MessageService // Inyecta el MessageService
+    private cdRef: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -58,45 +54,31 @@ export class DestinosComponent implements OnInit {
     this.loadMetodosPago();
   }
 
-  /**
-   * Inicializa el modal de Bootstrap.
-   */
-  inicializarModal(): void {
-    const modalElement = document.getElementById('destinoModal');
-    if (modalElement) {
-      this.modal = new bootstrap.Modal(modalElement);
-
-      modalElement.addEventListener('hidden.bs.modal', () => {
-        this.destinoSeleccionado = null;
-        this.cleanBodyStyles();
-        this.removeModalBackdrop();
-      });
-    }
+  private verificarDisponibilidad(destinos: Destino[]): Destino[] {
+    return destinos.map(destino => {
+      return {
+        ...destino,
+        mostrarSoldOut: destino.cantidad_Disponible <= 0
+      };
+    });
   }
 
-  /**
-   * Obtiene la lista de destinos públicos del servicio.
-   */
   getDestinos(): void {
     this.destinosService.obtenerDestinos().subscribe({
       next: (data: Destino[]) => {
-        this.destinosList = data;
+        this.destinosList = this.verificarDisponibilidad(data);
       },
       error: (err: HttpErrorResponse) => {
         console.error('Error al obtener destinos:', err);
-        // Usar 'error' en lugar de 'danger' para el tipo de alerta
-        this.mostrarAlerta('Error al cargar los destinos. Intenta recargar la página.', 'error');
+        this.mostrarAlerta('Error al cargar los destinos. Intenta recargar la página.', 'danger');
       }
     });
   }
 
-  /**
-   * Carga los métodos de pago disponibles y selecciona el primero por defecto.
-   */
   loadMetodosPago(): void {
     this.carritoService.getMetodosPago().pipe(
       catchError(error => {
-        console.error('Error al cargar métodos de pago en DestinosComponent:', error);
+        console.error('Error al cargar métodos de pago:', error);
         this.mostrarAlerta('No se pudieron cargar los métodos de pago. El carrito podría no funcionar correctamente.', 'error');
         return of([]);
       })
@@ -105,48 +87,46 @@ export class DestinosComponent implements OnInit {
         this.metodosPago = metodos;
         if (this.metodosPago.length > 0) {
           this.metodoPagoSeleccionado = this.metodosPago[0].id_metodoPago;
-          console.log('Método de pago seleccionado automáticamente:', this.metodoPagoSeleccionado);
-        } else {
-          console.warn('No se encontraron métodos de pago. Asegúrate de que existan en tu backend.');
-          this.mostrarAlerta('No hay métodos de pago disponibles. Por favor, contacta al soporte.', 'warning');
         }
       }
     });
   }
 
-  /**
-   * Abre el modal de detalle del destino.
-   * @param destino El destino a mostrar en el modal.
-   */
+  inicializarModal(): void {
+    const modalElement = document.getElementById('destinoModal');
+    if (modalElement) {
+      this.modal = new bootstrap.Modal(modalElement);
+      modalElement.addEventListener('hidden.bs.modal', () => {
+        this.destinoSeleccionado = null;
+        this.cleanBodyStyles();
+        this.removeModalBackdrop();
+      });
+    }
+  }
+
   abrirModal(destino: Destino): void {
+    if (destino.mostrarSoldOut) return;
+    
     this.destinoSeleccionado = destino;
     this.cantidadSeleccionada = 1;
     this.actualizarPrecioTotalModal();
     this.agregandoAlCarrito = false;
-    this.cleanBodyStyles();
-    this.removeModalBackdrop();
+    
     if (this.modal) {
       this.modal.show();
     }
   }
 
-  /**
-   * Incrementa la cantidad seleccionada de un destino.
-   */
   incrementarCantidad(): void {
-    if (this.destinoSeleccionado) {
-      if (this.cantidadSeleccionada < this.destinoSeleccionado.cantidad_Disponible) {
-        this.cantidadSeleccionada++;
-        this.actualizarPrecioTotalModal();
-      } else {
-        this.mostrarAlerta('No hay más cupos disponibles para este destino.', 'warning');
-      }
+    if (this.destinoSeleccionado && 
+        this.cantidadSeleccionada < this.destinoSeleccionado.cantidad_Disponible) {
+      this.cantidadSeleccionada++;
+      this.actualizarPrecioTotalModal();
+    } else {
+      this.mostrarAlerta('No hay más cupos disponibles para este destino.', 'warning');
     }
   }
 
-  /**
-   * Decrementa la cantidad seleccionada de un destino.
-   */
   decrementarCantidad(): void {
     if (this.cantidadSeleccionada > 1) {
       this.cantidadSeleccionada--;
@@ -154,20 +134,12 @@ export class DestinosComponent implements OnInit {
     }
   }
 
-  /**
-   * Actualiza el precio total mostrado en el modal.
-   */
   actualizarPrecioTotalModal(): void {
     if (this.destinoSeleccionado) {
       this.precioTotalModal = this.destinoSeleccionado.precio_Destino * this.cantidadSeleccionada;
-    } else {
-      this.precioTotalModal = 0;
     }
   }
 
-  /**
-   * Agrega el destino seleccionado al carrito de compras.
-   */
   agregarAlCarrito(): void {
     if (!this.destinoSeleccionado || this.agregandoAlCarrito) return;
 
@@ -180,13 +152,11 @@ export class DestinosComponent implements OnInit {
     }
 
     if (this.metodoPagoSeleccionado === null) {
-      console.error('Error: No se ha cargado un método de pago predeterminado.');
-      this.mostrarAlerta('No se pudo determinar un método de pago. Intenta recargar la página o contacta al soporte.', 'error');
+      this.mostrarAlerta('No se pudo determinar un método de pago. Intenta recargar la página.', 'error');
       return;
     }
 
     this.agregandoAlCarrito = true;
-
     const idDestino = this.destinoSeleccionado.id_destino;
     const cantidad = this.cantidadSeleccionada;
     const nombreDestino = this.destinoSeleccionado.nombre_Destino;
@@ -206,29 +176,21 @@ export class DestinosComponent implements OnInit {
       error: (err: HttpErrorResponse | any) => {
         console.error('Error al agregar al carrito:', err);
         const errorMessage = err.error?.error || err.message || 'Hubo un error al agregar el destino al carrito.';
-        // Usar 'error' en lugar de 'danger' para el tipo de alerta
-        this.mostrarAlerta(`Error al agregar ${nombreDestino} al carrito: ${errorMessage}`, 'error');
+        this.mostrarAlerta(`Error al agregar ${nombreDestino} al carrito: ${errorMessage}`, 'danger');
         this.agregandoAlCarrito = false;
       }
     });
   }
 
-  /**
-   * Cierra el modal de detalle del destino.
-   */
   cerrarModal(): void {
     if (this.modal) {
       this.modal.hide();
     } else {
-      console.warn('cerrarModal: No se encontró instancia de Bootstrap modal para #destinoModal. Limpiando manualmente.');
       this.cleanBodyStyles();
       this.removeModalBackdrop();
     }
   }
 
-  /**
-   * Nueva función para limpiar la clase modal-open y el estilo overflow del body
-   */
   private cleanBodyStyles(): void {
     document.body.classList.remove('modal-open');
     if (document.body.style.overflow === 'hidden') {
@@ -239,35 +201,25 @@ export class DestinosComponent implements OnInit {
     }
   }
 
-  /**
-   * Función para intentar remover el backdrop manualmente si persiste.
-   */
-  removeModalBackdrop(): void {
+  private removeModalBackdrop(): void {
     const backdrop = document.querySelector('.modal-backdrop');
     if (backdrop) {
       backdrop.remove();
     }
   }
 
-  /**
-   * Muestra una alerta en la interfaz de usuario utilizando el MessageService global.
-   * @param mensaje El mensaje a mostrar.
-   * @param tipo El tipo de alerta (ej. 'success', 'error', 'warning', 'info').
-   */
-  mostrarAlerta(mensaje: string, tipo: 'success' | 'error' | 'warning' | 'info'): void {
-    this.messageService.mostrarAlerta(mensaje, tipo);
-    // Ya no necesitas manipular directamente el toast aquí.
-    // Toda la lógica de mostrar/ocultar el toast y el setTimeout está en MessageDisplayComponent.
+  mostrarAlerta(mensaje: string, tipo: string): void {
+    this.mensajeAlerta = mensaje;
+    this.tipoAlerta = tipo;
+    this.cdRef.detectChanges();
+    
+    const toastElement = document.getElementById('liveToast');
+    if (toastElement) {
+      const toast = new bootstrap.Toast(toastElement);
+      toast.show();
+    }
   }
 
-  // Eliminados: showAlert(), limpiarAlerta(), limpiarAlertaDespuesDeTiempo()
-
-  /**
-   * Función de seguimiento para el rendimiento de la lista de destinos.
-   * @param index El índice del elemento.
-   * @param destino El objeto destino.
-   * @returns El ID del destino.
-   */
   trackById(index: number, destino: Destino): number {
     return destino.id_destino;
   }
