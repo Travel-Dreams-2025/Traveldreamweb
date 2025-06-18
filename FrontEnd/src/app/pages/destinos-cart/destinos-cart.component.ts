@@ -458,15 +458,15 @@ export class DestinosCartComponent implements OnInit {
         const initPoint = preferenceResponse.init_point;
         if (initPoint) {
           window.open(initPoint, '_blank');
-          // **¡Aquí se agregó el mensaje!**
           this.carritoService.mostrarAlerta('Se está abriendo Mercado Pago en una nueva pestaña. Por favor, revísala para completar tu pago.', 'info');
         } else {
           console.error('No se recibió el init_point de Mercado Pago:', preferenceResponse);
           this.carritoService.mostrarAlerta('No se pudo iniciar el proceso de pago con Mercado Pago.', 'error');
+          this.pagoEnProceso = false; // Restablecer si falla la obtención del init_point
         }
       },
       error: (error: HttpErrorResponse) => {
-        console.error('Error al crear la preferencia de Mercado Pago (Backend):', error); // Mensaje más específico
+        console.error('Error al crear la preferencia de Mercado Pago (Backend):', error); 
         let userFriendlyMessage = 'Hubo un error al preparar el pago con Mercado Pago. Inténtalo de nuevo.';
         if (error.error && typeof error.error === 'object' && error.error.error) {
             userFriendlyMessage = error.error.error;
@@ -474,8 +474,19 @@ export class DestinosCartComponent implements OnInit {
             userFriendlyMessage = error.message;
         }
         this.carritoService.mostrarAlerta(userFriendlyMessage, 'error');
+        this.pagoEnProceso = false; // Restablecer si hay un error en la llamada
       }
     });
+  }
+
+  /**
+   * Restablece el estado del proceso de pago, ocultando el overlay.
+   */
+  resetPaymentProcess(): void {
+    this.pagoEnProceso = false; // Esto oculta el overlay del HTML
+    this.carritoService.mostrarAlerta('Proceso de pago cancelado. Puedes continuar con tu carrito.', 'info');
+    // Opcional: Si deseas recargar el carrito por si hay cambios en el backend mientras se intentaba pagar:
+    // this.loadAllData();
   }
 
   // Usamos id_compra como identificador único para trackBy

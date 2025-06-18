@@ -16,7 +16,7 @@ import { NuevoPasswordComponent } from './pages/auth/nuevo-password/nuevo-passwo
 import { PagoExitoComponent } from './components/pago-exito/pago-exito.component';
 import { PagoFallidoComponent } from './components/pago-fallido/pago-fallido.component';
 import { PagoPendienteComponent } from './components/pago-pendiente/pago-pendiente.component';
-import { ChangePasswordComponent } from './pages/change-password/change-password.component'; // ¡NUEVA IMPORTACIÓN!
+import { ChangePasswordComponent } from './pages/change-password/change-password.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
