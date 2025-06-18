@@ -8,4 +8,5 @@ export interface Destino {
   cantidad_Disponible: number;
   id_metodoPago: number;
   id_categoria: number;
+  mostrarSoldOut?: boolean;
 }
