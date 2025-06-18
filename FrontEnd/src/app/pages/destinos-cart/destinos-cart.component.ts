@@ -487,6 +487,9 @@ export class DestinosCartComponent implements OnInit {
     this.carritoService.mostrarAlerta('Proceso de pago cancelado. Puedes continuar con tu carrito.', 'info');
     // Opcional: Si deseas recargar el carrito por si hay cambios en el backend mientras se intentaba pagar:
     // this.loadAllData();
+
+    // Redirijimos al inicio
+    this.router.navigate(['/']);
   }
 
   // Usamos id_compra como identificador único para trackBy
