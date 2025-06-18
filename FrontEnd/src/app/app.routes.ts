@@ -13,17 +13,19 @@ import { AuthGuard } from './interceptors/auth.guard';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { RecuperarPasswordComponent } from './pages/recuperar-password/recuperar-password.component';
 import { NuevoPasswordComponent } from './pages/auth/nuevo-password/nuevo-password.component';
-import { PagoExitoComponent } from './components/pago-exito/pago-exito.component';
-import { PagoFallidoComponent } from './components/pago-fallido/pago-fallido.component';
-import { PagoPendienteComponent } from './components/pago-pendiente/pago-pendiente.component';
-import { ChangePasswordComponent } from './pages/change-password/change-password.component';
+import { PoliticasComponent } from './pages/politicas/politicas.component';
+import { CombosComponent } from './pages/combos/combos.component'; // Importación de CombosComponent
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
   { path: 'home', component: HomeComponent },
   { path: 'destinos', component: DestinosComponent },
   { path: 'destinos/:id', component: DestinosDetailsComponent },
-  { path: 'destinos-cart', component: DestinosCartComponent, canActivate: [AuthGuard] },
+  {
+    path: 'destinos-cart',
+    component: DestinosCartComponent,
+    canActivate: [AuthGuard],
+  },
   { path: 'app-dash', component: DashboardComponent, canActivate: [AuthGuard] },
   { path: 'contacto', component: ContactoComponent },
   { path: 'iniciar-sesion', component: IniciarSesionComponent },
@@ -31,14 +33,15 @@ export const routes: Routes = [
   { path: 'nosotros', component: NosotrosComponent },
   { path: 'nosotros/:id', component: ProfesionalComponent },
   { path: 'recuperar-password', component: RecuperarPasswordComponent },
-  { path: 'new-password/:uid/:token', component: NuevoPasswordComponent }, 
-  { path: 'cambiar-contrasena', component: ChangePasswordComponent, canActivate: [AuthGuard] },
-
-  { path: 'novedades', loadComponent: () => import('./pages/novedades/novedades.component').then(m => m.NovedadesComponent) },
-  { path: 'pago-exito', component: PagoExitoComponent },
-  { path: 'pago-fallido', component: PagoFallidoComponent },
-  { path: 'pago-pendiente', component: PagoPendienteComponent },
-  
-  // Ruta de error 404
-  { path: '**', component: Pagina404Component }
+  { path: 'new-password', component: NuevoPasswordComponent },
+  { path: 'politicas', component: PoliticasComponent },
+  { path: 'combos', component: CombosComponent }, // Ruta para CombosComponent
+  {
+    path: 'novedades',
+    loadComponent: () =>
+      import('./pages/novedades/novedades.component').then(
+        (m) => m.NovedadesComponent
+      ),
+  },
+  { path: '**', component: Pagina404Component },
 ];
