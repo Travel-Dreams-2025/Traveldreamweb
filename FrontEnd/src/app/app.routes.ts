@@ -15,6 +15,7 @@ import { RecuperarPasswordComponent } from './pages/recuperar-password/recuperar
 import { NuevoPasswordComponent } from './pages/auth/nuevo-password/nuevo-password.component';
 import { PoliticasComponent } from './pages/politicas/politicas.component';
 import { CombosComponent } from './pages/combos/combos.component'; // Importación de CombosComponent
+import { ChangePasswordComponent } from './pages/change-password/change-password.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -34,6 +35,7 @@ export const routes: Routes = [
   { path: 'nosotros/:id', component: ProfesionalComponent },
   { path: 'recuperar-password', component: RecuperarPasswordComponent },
   { path: 'new-password', component: NuevoPasswordComponent },
+  { path: 'cambiar-contrasena', component: ChangePasswordComponent },
   { path: 'politicas', component: PoliticasComponent },
   { path: 'combos', component: CombosComponent }, // Ruta para CombosComponent
   {
