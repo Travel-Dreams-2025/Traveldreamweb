@@ -2,6 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+
 // import { MatSnackBar } from '@angular/material/snack-bar'; // Descomenta si usas Angular Material SnackBar
 
 // --- Interfaces necesarias (TODAS EXPORTADAS) ---
@@ -68,7 +69,6 @@ export interface MercadoPagoPreferenceResponse {
   external_reference: string;
 }
 
-
 @Injectable({
   providedIn: 'root'
 })
@@ -123,7 +123,40 @@ export class CarritoService {
       catchError(error => this.handleError(error))
     );
   }
-
+  registrarCompra(compraData: any): Observable<any> {
+    // Usa el mismo endpoint que usas para tarjeta, pero con tipo "efectivo"
+    return this.http.post('/api/compras', {
+      ...compraData,
+      tipo_pago: 'efectivo',
+      estado: 'completado'
+    }).pipe(
+      catchError(error => {
+        console.error('Error al registrar compra:', error);
+        throw error;
+      })
+    );
+  }
+  registrarCompraEfectivo(compraData: any): Observable<any> {
+    const payload = {
+      id_usuario: compraData.userId,
+      id_destino: compraData.items[0].id_destino, // Asumiendo un solo item por compra
+      id_metodoPago: compraData.metodoPagoId,
+      nombre_Destino: compraData.items[0].nombre_Destino,
+      descripcion: compraData.items[0].descripcion,
+      image: compraData.items[0].image,
+      total: compraData.total.toString(),
+      cantidad: compraData.items[0].cantidad.toString(),
+      estado_pago: 'approved',
+      fecha_salida: compraData.items[0].fecha_salida || new Date().toISOString().split('T')[0]
+    };
+  
+    return this.http.post('/api/v1/purchases/', payload).pipe(
+      catchError(error => {
+        console.error('Error al registrar compra en efectivo:', error);
+        throw error;
+      })
+    );
+  }
   /**
    * Agrega un nuevo ítem al carrito o actualiza uno existente.
    * Utiliza la acción personalizada `add_item` del CarritoViewSet.
@@ -158,7 +191,7 @@ export class CarritoService {
       catchError(error => this.handleError(error))
     );
   }
-
+  
   /**
    * Crea una preferencia de pago en Mercado Pago.
    * Utiliza el endpoint `@csrf_exempt` `create_preference` en tu backend.
@@ -184,20 +217,34 @@ export class CarritoService {
     );
   }
 
-  obtenerHistorialLocal(): any[] {
-    const historialString = localStorage.getItem('historial_compras_local');
+  // --- Métodos para manejo de localStorage ---
+
+  /**
+   * Guarda una compra en el historial local (localStorage)
+   * @param compraData Datos de la compra a guardar
+   */
+  guardarCompraLocal(compraData: any): void {
     try {
-      return historialString ? JSON.parse(historialString) : [];
-    } catch (e) {
-      console.error('Error al parsear el historial local:', e);
-      return [];
+      const historial = this.obtenerHistorialLocal() || [];
+      historial.push(compraData);
+      localStorage.setItem('historial_compras_local', JSON.stringify(historial));
+    } catch (error) {
+      console.error('Error al guardar compra en localStorage:', error);
     }
   }
 
-  guardarEnHistorialLocal(item: any): void {
-    const historial = this.obtenerHistorialLocal();
-    historial.push(item);
-    localStorage.setItem('historial_compras_local', JSON.stringify(historial));
+  /**
+   * Obtiene el historial de compras desde localStorage
+   * @returns Array con las compras almacenadas localmente
+   */
+  obtenerHistorialLocal(): any[] {
+    try {
+      const historialString = localStorage.getItem('historial_compras_local');
+      return historialString ? JSON.parse(historialString) : [];
+    } catch (error) {
+      console.error('Error al obtener historial de localStorage:', error);
+      return [];
+    }
   }
 
   // --- Métodos de Utilidad (puedes personalizarlos con MatSnackBar si lo tienes) ---
@@ -225,7 +272,18 @@ export class CarritoService {
     // Por ahora, usaremos alert() si no tienes MatSnackBar configurado
     // alert(`${type.toUpperCase()}: ${message}`); // Línea comentada para eliminar los pop-ups
   }
-
+/**
+ * Actualiza el stock de un destino
+ * @param destinoId ID del destino
+ * @param cantidad Cambio en el stock (positivo para aumentar, negativo para disminuir)
+ */
+actualizarStockDestino(destinoId: number, cantidad: number): Observable<any> {
+  return this.http.patch(`${this.destinosBaseUrl}/${destinoId}/update_stock/`, { 
+    cantidad: cantidad 
+  }).pipe(
+    catchError(error => this.handleError(error))
+  );
+}
   private handleError(error: HttpErrorResponse): Observable<never> {
     let errorMessage = 'Ocurrió un error desconocido.';
     let userFriendlyMessage = 'Hubo un problema de comunicación con el servidor.';
