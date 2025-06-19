@@ -239,24 +239,19 @@ export class DestinosCartComponent implements OnInit {
       this.router.navigate(['/login']);
       return;
     }
-
+  
     const itemsToCheckout = this.carritoItems.filter(item => item.selected);
-
+  
     if (itemsToCheckout.length === 0) {
       this.carritoService.mostrarAlerta('Por favor, selecciona al menos un destino para proceder al checkout.', 'warning');
       return;
     }
-
+  
     if (this.metodoPagoSeleccionado === null || this.metodoPagoSeleccionado === undefined) {
       this.carritoService.mostrarAlerta('Por favor, selecciona un método de pago.', 'warning');
       return;
     }
-
-    // Depuración importante
-    console.log('Método seleccionado (tipo):', typeof this.metodoPagoSeleccionado, 'Valor:', this.metodoPagoSeleccionado);
-    console.log('Métodos disponibles:', this.metodosPago);
-
-    // Comparación estricta con conversión a número
+  
     const metodoPago = this.metodosPago.find(m => 
       Number(m.id_metodoPago) === Number(this.metodoPagoSeleccionado)
     );
@@ -266,9 +261,27 @@ export class DestinosCartComponent implements OnInit {
       this.carritoService.mostrarAlerta('Método de pago no válido. Por favor, selecciona otro.', 'error');
       return;
     }
-
-    // Solo procesar con tarjeta (efectivo fue filtrado)
+  
+    // Procesar pago con tarjeta
     if (metodoPago.nombrePago === 'Tarjeta') {
+      // Guardar datos de compra localmente antes de procesar el pago
+      const compraData = {
+        userId: userId,
+        metodoPagoId: this.metodoPagoSeleccionado,
+        total: this.total,
+        items: itemsToCheckout.map(item => ({
+          id_destino: item.id_destino,
+          nombre_Destino: item.nombre_Destino,
+          descripcion: item.descripcion,
+          image: item.image,
+          cantidad: item.cantidad,
+          precio_Destino: item.precio_Destino,
+          fecha_salida: item.fecha_salida
+        })),
+        fecha: new Date().toISOString()
+      };
+  
+      this.carritoService.guardarCompraTarjeta(compraData);
       this.procesarPagoConTarjeta(itemsToCheckout, userId);
     } else {
       this.carritoService.mostrarAlerta(`El método de pago '${metodoPago.nombrePago}' no está configurado.`, 'error');
