@@ -1,0 +1,181 @@
+/* src/app/pages/politicas/politicas.component.css */
+
+:host {
+  --primary-color: #3f51b5; /* Azul primario (puedes ajustar) */
+  --secondary-color: #ff4081; /* Color de acento (ej. rosa/rojo) */
+  --text-color: #333;
+  --light-gray: #f8f8f8;
+  --medium-gray: #e0e0e0;
+  --dark-gray: #666;
+  --link-color: #007bff;
+  --link-hover-color: #0056b3;
+}
+
+.politicas-container {
+  max-width: 900px;
+  margin: 50px auto;
+  padding: 40px;
+  background-color: #ffffff;
+  border-radius: 12px; /* Bordes un poco más redondeados */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12); /* Sombra más pronunciada pero suave */
+  font-family: "Montserrat", sans-serif; /* nueva fuente */
+  line-height: 1.7; /* Mayor espaciado entre líneas */
+  color: var(--text-color);
+  transition: all 0.3s ease-in-out; /* Transición suave para cualquier cambio */
+}
+
+.politicas-container:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15); /* Sombra ligeramente más intensa al pasar el ratón */
+}
+
+.politicas-container h1 {
+  font-size: 3em; /* Título más grande */
+  font-weight: 700; /* Negrita para el título */
+  color: var(--primary-color);
+  text-align: center;
+  margin-bottom: 45px;
+  position: relative; /* Para el pseudo-elemento de la línea */
+  padding-bottom: 20px;
+}
+
+.politicas-container h1::after {
+  /* Línea decorativa debajo del título */
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 80px; /* Ancho de la línea */
+  height: 4px;
+  background-color: var(--secondary-color); /* Color de la línea */
+  border-radius: 2px;
+}
+
+.politicas-section {
+  margin-bottom: 40px; /* Más espacio entre secciones */
+  padding-bottom: 20px; /* Espaciado interno al final de la sección */
+  border-bottom: 1px dashed var(--medium-gray); /* Línea punteada sutil */
+}
+
+.politicas-section:last-of-type {
+  /* Quitar línea en la última sección */
+  border-bottom: none;
+  margin-bottom: 20px;
+}
+
+.politicas-section h2 {
+  font-size: 2em; /* Subtítulos más grandes */
+  font-weight: 600; /* Semi-negrita */
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  padding-left: 10px; /* Pequeño padding para alinear con viñetas si hay */
+  position: relative;
+}
+
+.politicas-section h2::before {
+  /* Pequeño indicador visual al lado del h2 */
+  content: "▶"; /* Puedes usar un icono o un carácter como este */
+  color: var(--secondary-color);
+  font-size: 0.8em;
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.8;
+}
+
+.politicas-section p {
+  margin-bottom: 18px; /* Más espacio entre párrafos */
+  font-size: 1.05em;
+  color: var(--dark-gray);
+}
+
+.politicas-section ul {
+  list-style: none; /* Eliminar viñetas por defecto */
+  padding-left: 0; /* Quitar padding por defecto */
+  margin-bottom: 20px;
+}
+
+.politicas-section ul li {
+  margin-bottom: 10px; /* Más espacio entre elementos de lista */
+  font-size: 1em;
+  color: var(--dark-gray);
+  padding-left: 25px; /* Espacio para viñeta personalizada */
+  position: relative;
+}
+
+.politicas-section ul li::before {
+  /* Viñeta personalizada con color */
+  content: "•";
+  color: var(--secondary-color);
+  font-size: 1.5em;
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 0; /* Ajuste para centrar bien */
+}
+
+.politicas-section ul li strong {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.politicas-date {
+  text-align: right;
+  font-size: 0.9em;
+  color: var(--dark-gray);
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--medium-gray);
+  opacity: 0.8;
+}
+
+/* Estilo para el enlace del email dentro de las políticas */
+.politicas-section a {
+  color: var(--link-color);
+  text-decoration: none;
+  font-weight: 600; /* Enlace en semi-negrita */
+  transition: color 0.3s ease; /* Transición suave para el color */
+}
+
+.politicas-section a:hover {
+  color: var(--link-hover-color);
+  text-decoration: underline; /* Subrayado al pasar el ratón */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .politicas-container {
+    margin: 30px 15px;
+    padding: 25px;
+  }
+
+  .politicas-container h1 {
+    font-size: 2.5em;
+    margin-bottom: 35px;
+  }
+
+  .politicas-section h2 {
+    font-size: 1.8em;
+  }
+}
+
+@media (max-width: 480px) {
+  .politicas-container {
+    padding: 15px;
+  }
+
+  .politicas-container h1 {
+    font-size: 2em;
+    margin-bottom: 25px;
+  }
+
+  .politicas-section h2 {
+    font-size: 1.6em;
+  }
+
+  .politicas-section ul li {
+    padding-left: 20px;
+  }
+}

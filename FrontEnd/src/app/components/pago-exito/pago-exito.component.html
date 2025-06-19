@@ -1,0 +1,23 @@
+<div class="container my-5 text-center">
+  <div class="card p-4 shadow-sm">
+    <h1 class="card-title text-success mb-3">¡Pago Exitoso! <i class="bi bi-check-circle-fill"></i></h1>
+    <p class="card-text lead">¡Gracias por tu compra! Tu transacción ha sido procesada correctamente.</p>
+
+    <div class="info-section my-4 p-3 border rounded bg-light text-start">
+      <p><strong>ID de la Transacción:</strong> {{ paymentId || 'No disponible' }}</p>
+      <p><strong>Estado:</strong> {{ status || 'No disponible' }}</p>
+      <p *ngIf="externalReference"><strong>Referencia de tu Orden:</strong> {{ externalReference }}</p>
+    </div>
+
+    <p class="mt-4 text-primary fw-bold">
+      Por favor, puedes **cerrar esta pestaña** y volver a la ventana principal de Traveldream para continuar.
+    </p>
+    <p class="mt-2 text-muted small">
+      (Si configuraste "auto_return" en tu backend, esta pestaña podría cerrarse automáticamente o redirigirte en breve.)
+    </p>
+
+    <button (click)="volverAlDashboard()" class="btn btn-primary mt-3">
+      Ir al Dashboard <i class="bi bi-arrow-right"></i>
+    </button>
+  </div>
+</div>

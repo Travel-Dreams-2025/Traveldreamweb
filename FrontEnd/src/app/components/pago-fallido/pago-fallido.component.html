@@ -1,0 +1,27 @@
+<div class="container my-5 text-center">
+  <div class="card p-4 shadow-sm">
+    <h1 class="card-title text-danger mb-3">¡Pago Rechazado o Fallido! <i class="bi bi-x-circle-fill"></i></h1>
+    <p class="card-text lead">Lamentablemente, no pudimos procesar tu pago en este momento.</p>
+
+    <div class="info-section my-4 p-3 border rounded bg-light text-start">
+      <p><strong>Estado:</strong> {{ status || 'No disponible' }}</p>
+      <p *ngIf="reason"><strong>Motivo:</strong> {{ reason }}</p>
+      <p *ngIf="paymentId"><strong>ID de Transacción:</strong> {{ paymentId }}</p>
+      <p *ngIf="externalReference"><strong>Referencia de tu Orden:</strong> {{ externalReference }}</p>
+      <p class="text-muted mt-3">Por favor, revisa tus datos de pago, intenta con otro método, o contacta a soporte si el problema persiste.</p>
+    </div>
+
+    <p class="mt-4 text-primary fw-bold">
+      Puedes **cerrar esta pestaña** y volver a la ventana principal de Traveldream para reintentar el pago o explorar otras opciones.
+    </p>
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+      <button (click)="volverAlCarrito()" class="btn btn-warning me-md-2">
+        <i class="bi bi-cart"></i> Volver al Carrito
+      </button>
+      <button (click)="irAlDashboard()" class="btn btn-secondary">
+        <i class="bi bi-grid-fill"></i> Ir al Dashboard
+      </button>
+    </div>
+  </div>
+</div>

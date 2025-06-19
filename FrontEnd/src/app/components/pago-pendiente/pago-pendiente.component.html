@@ -1,0 +1,40 @@
+<div class="container my-5 text-center">
+  <div class="card p-4 shadow-sm">
+    <h1 class="card-title text-warning mb-3">¡Pago Pendiente de Confirmación! <i class="bi bi-hourglass-split"></i></h1>
+    <p class="card-text lead">Tu pago ha sido iniciado y está esperando la confirmación de la entidad bancaria o punto de pago.</p>
+    <p class="card-text">Una vez que tu pago se acredite, recibirás una confirmación por correo electrónico.</p>
+
+    <div class="info-section my-4 p-3 border rounded bg-light text-start">
+      <p><strong>Estado:</strong> {{ status || 'No disponible' }}</p>
+      <p *ngIf="paymentId"><strong>ID de la Transacción:</strong> {{ paymentId }}</p>
+      <p *ngIf="externalReference"><strong>Referencia de tu Orden:</strong> {{ externalReference }}</p>
+      <p *ngIf="paymentType"><strong>Tipo de Pago:</strong> {{ paymentType === 'ticket' ? 'En Efectivo (Rapipago/Pagofácil)' : (paymentType === 'bank_transfer' ? 'Transferencia Bancaria' : paymentType) }}</p>
+      <p *ngIf="transactionAmount"><strong>Monto:</strong> ${{ transactionAmount | number:'1.2-2' }} ARS</p>
+
+      <div *ngIf="barcodeUrl">
+        <h5 class="mt-4">Instrucciones de Pago:</h5>
+        <p>Utiliza el siguiente código para completar tu pago en el punto de pago seleccionado:</p>
+        <img [src]="barcodeUrl" alt="Código de barras para pago" class="img-fluid my-3" style="max-width: 300px;">
+        <p *ngIf="barcode"><strong>Código de Barras:</strong> {{ barcode }}</p>
+        <p class="text-muted">Recuerda que el pago puede tardar hasta 1 día hábil en acreditarse.</p>
+      </div>
+
+      <div *ngIf="!barcodeUrl && paymentType === 'bank_transfer'">
+        <h5 class="mt-4">Detalles para Transferencia Bancaria:</h5>
+        <p>Por favor, realiza la transferencia utilizando los datos provistos en la página anterior de Mercado Pago.</p>
+        <p class="text-muted">Las transferencias bancarias pueden demorar en acreditarse. Recibirás un email de confirmación.</p>
+      </div>
+    </div>
+
+    <p class="mt-4 text-primary fw-bold">
+      Puedes **cerrar esta pestaña** y volver a la ventana principal de Traveldream.
+    </p>
+    <p class="mt-2 text-muted small">
+      Te notificaremos por email cuando tu pago sea confirmado.
+    </p>
+
+    <button (click)="volverAlDashboard()" class="btn btn-primary mt-3">
+      Ir al Dashboard <i class="bi bi-arrow-right"></i>
+    </button>
+  </div>
+</div>

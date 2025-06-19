@@ -7,9 +7,9 @@ import { AuthService } from './auth.service';
   providedIn: 'root'
 })
 export class ProfileService {
-  private apiUrl = 'https://dreamtravel.pythonanywhere.com/api/v1/profiles/me/';
+  private apiUrl = 'https://dreamtravelmp.pythonanywhere.com/api/v1/profiles/me/';
   private updateUrl = `${this.apiUrl}update/`;
-  private uploadImageUrl = `${this.apiUrl}upload-image/`; // Endpoint para subir imágenes
+  private uploadImageUrl = `${this.apiUrl}upload-image/`;
 
   constructor(
     private http: HttpClient,
