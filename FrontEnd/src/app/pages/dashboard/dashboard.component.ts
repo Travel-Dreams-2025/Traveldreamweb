@@ -79,13 +79,12 @@ export class DashboardComponent implements OnInit {
       historialLocal: of(historialLocal || [])
     }).subscribe({
       next: ({comprasBackend, historialLocal}) => {
-        console.log('Datos de compras desde backend:', comprasBackend);
-        console.log('Datos de historial local:', historialLocal);
-        
         this.compras = [
           ...this.mapearComprasBackend(comprasBackend),
           ...this.mapearHistorialLocal(historialLocal)
-        ];
+        ].sort((a, b) => 
+          new Date(b.fecha_creacion).getTime() - new Date(a.fecha_creacion).getTime()
+        );
       },
       error: (error: any) => {
         console.error('Error al cargar historial completo:', error);
@@ -110,7 +109,6 @@ export class DashboardComponent implements OnInit {
     if (!compras || !Array.isArray(compras)) return [];
 
     return compras.map(compra => {
-      // Convertir campos numéricos
       const cantidad = parseInt(compra.cantidad) || 1;
       const total = parseFloat(compra.total) || 0;
       
@@ -126,7 +124,7 @@ export class DashboardComponent implements OnInit {
         fecha_creacion: compra.fecha_creacion,
         fechaFormateada: this.formatearFecha(compra.fecha_creacion),
         metodo_pago: { 
-          nombrePago: this.obtenerNombreMetodoPago(compra.id_metodoPago) || 'No especificado'
+          nombrePago: compra.metodo_pago?.nombrePago || this.obtenerNombreMetodoPago(compra.id_metodoPago) || 'No especificado'
         },
         totalFormateado: this.formatearMoneda(total),
         esLocal: false,
@@ -138,10 +136,9 @@ export class DashboardComponent implements OnInit {
 
   private obtenerNombreMetodoPago(idMetodo: number): string {
     const metodosPago: {[key: number]: string} = {
-      1: 'Mercado Pago',
+      1: 'Tarjeta / Mercado Pago',
       2: 'Transferencia Bancaria',
       3: 'Efectivo'
-      // Agrega más métodos según corresponda
     };
     return metodosPago[idMetodo] || `Método ${idMetodo}`;
   }
@@ -163,9 +160,9 @@ export class DashboardComponent implements OnInit {
 
       const imagenDestino = primerItem.image || 'assets/img/default-trip.jpg';
       
-      const metodoPago = compra.metodoPagoId ? `Método ${compra.metodoPagoId}` : 
-                        compra.metodo_pago?.nombrePago || 
-                        'No especificado';
+      const metodoPago = compra.metodo_pago?.nombrePago || 
+                       (compra.metodoPagoId ? this.obtenerNombreMetodoPago(compra.metodoPagoId) : 
+                       'No especificado');
 
       return {
         id_compra: compra.id || compra.fecha,
@@ -183,8 +180,8 @@ export class DashboardComponent implements OnInit {
         },
         totalFormateado: this.formatearMoneda(total),
         esLocal: true,
-        estado_pago: 'completed',
-        fecha_salida: 'No definida'
+        estado_pago: compra.estado_pago || 'completed',
+        fecha_salida: primerItem.fecha_salida || 'No definida'
       };
     });
   }

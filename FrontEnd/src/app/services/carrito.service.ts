@@ -2,29 +2,26 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-// import { MatSnackBar } from '@angular/material/snack-bar'; // Descomenta si usas Angular Material SnackBar
-
-// --- Interfaces necesarias (TODAS EXPORTADAS) ---
 
 export interface CarritoItem {
-  id_compra: number; // ID del item en el carrito (o ID de la compra)
-  id_usuario?: number; // El ID del usuario asociado
-  id_destino: number; // ID del destino
+  id_compra: number;
+  id_usuario?: number;
+  id_destino: number;
   nombre_Destino: string;
   descripcion: string;
   precio_Destino: number;
   cantidad: number;
-  fecha_salida: string; // O Date, asegúrate de que el formato sea 'YYYY-MM-DD' para el backend
-  image: string; // Asegúrate de que esta propiedad exista en tu serializador si la usas
-  selected?: boolean; // Para la selección en el carrito
-  cantidad_Disponible?: number; // Añadido para el stock disponible del destino
+  fecha_salida: string;
+  image: string;
+  selected?: boolean;
+  cantidad_Disponible?: number;
 }
 
 export interface CarritoAddItem {
   id_destino: number;
   cantidad: number;
-  fecha_salida?: string; // Hacerlo opcional si a veces no se envía
-  id_metodoPago?: number; // Hacerlo opcional si a veces no se envía o el backend tiene un default
+  fecha_salida?: string;
+  id_metodoPago?: number;
 }
 
 export interface MetodoPago {
@@ -32,18 +29,17 @@ export interface MetodoPago {
   nombrePago: string;
 }
 
-// Interfaz Destino exportada y completa
 export interface Destino {
   id_destino: number;
   nombre_Destino: string;
   descripcion: string;
   precio_Destino: number;
-  cantidad_Disponible: number; // Esencial para la validación de stock
+  cantidad_Disponible: number;
   image: string;
-  fecha_salida?: string | Date; // Asegúrate de que el tipo coincida con tu modelo
-  mostrarSoldOut?: boolean; // Añadido para consistencia con el componente
-  estaVigente?: boolean;   // Añadido para consistencia con el componente
-  tieneCupo?: boolean;     // Añadido para consistencia con el componente
+  fecha_salida?: string | Date;
+  mostrarSoldOut?: boolean;
+  estaVigente?: boolean;
+  tieneCupo?: boolean;
 }
 
 export interface CompraHistorialItem {
@@ -58,7 +54,7 @@ export interface CompraHistorialItem {
   imagen_destino?: string;
   descripcion_destino?: string;
   fecha_salida_destino?: string;
-  estado_compra?: string; // Ahora esto se mapearía a 'estado_pago' del modelo Carrito
+  estado_compra?: string;
   id_metodoPago?: number;
 }
 
@@ -68,79 +64,45 @@ export interface MercadoPagoPreferenceResponse {
   external_reference: string;
 }
 
-
 @Injectable({
   providedIn: 'root'
 })
 export class CarritoService {
   private baseUrl = 'https://dreamtravelmp.pythonanywhere.com'; 
-  private apiUrl = `${this.baseUrl}/api/v1`; 
-
-  private carritoBaseUrl = `${this.apiUrl}/carrito`; 
+  private apiUrl = `${this.baseUrl}/api/v1`;
+  private carritoBaseUrl = `${this.apiUrl}/carrito`;
   private metodosPagoUrl = `${this.apiUrl}/metodos-pago`;
-  private destinosBaseUrl = `${this.apiUrl}/destinos`; 
-  private historialComprasApiUrl = `${this.apiUrl}/purchases`; 
-  private checkoutUrl = `${this.apiUrl}/checkout`; 
-
+  private destinosBaseUrl = `${this.apiUrl}/destinos`;
+  private historialComprasApiUrl = `${this.apiUrl}/purchases`;
+  private checkoutUrl = `${this.apiUrl}/checkout`;
   private mercadopagoCreatePreferenceUrl = `${this.apiUrl}/mercadopago/create_preference/`;
 
-  constructor(
-    private http: HttpClient,
-    // private snackBar: MatSnackBar // Descomenta si usas Angular Material SnackBar
-  ) { }
+  constructor(private http: HttpClient) { }
 
-  // --- Métodos del Carrito (Ajustados al ViewSet) ---
-
-  /**
-   * Obtiene los ítems del carrito de un usuario específico.
-   * Utiliza la acción personalizada `by_user` del CarritoViewSet.
-   * GET /api/v1/carrito/by_user/{userId}/
-   */
   getCarritoByUserId(userId: number): Observable<CarritoItem[]> {
     return this.http.get<CarritoItem[]>(`${this.carritoBaseUrl}/by_user/${userId}/`).pipe(
       catchError(error => this.handleError(error))
     );
   }
 
-  /**
-   * Elimina un ítem del carrito.
-   * Utiliza el método DELETE por defecto del CarritoViewSet.
-   * DELETE /api/v1/carrito/{id_compra}/
-   */
   deleteCarritoItem(id_compra: number): Observable<void> {
     return this.http.delete<void>(`${this.carritoBaseUrl}/${id_compra}/`).pipe(
       catchError(error => this.handleError(error))
     );
   }
 
-  /**
-   * Actualiza la cantidad y/o la fecha de salida de un ítem del carrito.
-   * Utiliza el método PATCH por defecto del CarritoViewSet.
-   * PATCH /api/v1/carrito/{id_compra}/
-   */
   updateCarritoItem(id_compra: number, data: { cantidad?: number, fecha_salida?: string }): Observable<CarritoItem> {
     return this.http.patch<CarritoItem>(`${this.carritoBaseUrl}/${id_compra}/`, data).pipe(
       catchError(error => this.handleError(error))
     );
   }
 
-  /**
-   * Agrega un nuevo ítem al carrito o actualiza uno existente.
-   * Utiliza la acción personalizada `add_item` del CarritoViewSet.
-   * POST /api/v1/carrito/add_item/
-   */
   addItemCarrito(item: CarritoAddItem): Observable<CarritoItem> {
     return this.http.post<CarritoItem>(`${this.carritoBaseUrl}/add_item/`, item).pipe(
       catchError(error => this.handleError(error))
     );
   }
 
-  // --- Otros Métodos ---
-
-  /**
-   * Obtiene los detalles de un destino por su ID.
-   * GET /api/v1/destinos/{destinoId}/
-   */
   getDestinoById(destinoId: number): Observable<Destino> {
     return this.http.get<Destino>(`${this.destinosBaseUrl}/${destinoId}/`).pipe(
       catchError(error => this.handleError(error))
@@ -148,7 +110,7 @@ export class CarritoService {
   }
 
   getMetodosPago(): Observable<MetodoPago[]> {
-    return this.http.get<MetodoPago[]>(this.metodosPagoUrl + '/').pipe( 
+    return this.http.get<MetodoPago[]>(this.metodosPagoUrl + '/').pipe(
       catchError(error => this.handleError(error))
     );
   }
@@ -159,11 +121,6 @@ export class CarritoService {
     );
   }
 
-  /**
-   * Crea una preferencia de pago en Mercado Pago.
-   * Utiliza el endpoint `@csrf_exempt` `create_preference` en tu backend.
-   * POST /api/mercadopago/create_preference/
-   */
   createMercadoPagoPreference(items: any[], userId: number): Observable<MercadoPagoPreferenceResponse> {
     const payload = {
       items: items,
@@ -174,56 +131,49 @@ export class CarritoService {
     );
   }
 
-  /**
-   * Obtiene el historial de compras del usuario.
-   * Utiliza el endpoint `listar_compras` en tu backend (ahora `/api/v1/purchases/`).
-   */
   obtenerHistorialCompras(): Observable<CompraHistorialItem[]> {
     return this.http.get<CompraHistorialItem[]>(this.historialComprasApiUrl).pipe(
       catchError(error => this.handleError(error))
     );
   }
 
-  obtenerHistorialLocal(): any[] {
-    const historialString = localStorage.getItem('historial_compras_local');
+  // Nuevo método para guardar compras con tarjeta en el historial local
+  guardarCompraTarjeta(compraData: any): void {
     try {
+      const historial = this.obtenerHistorialLocal() || [];
+      const nuevaCompra = {
+        ...compraData,
+        metodo_pago: { nombrePago: 'Tarjeta / Mercado Pago' },
+        fecha: new Date().toISOString(),
+        estado_pago: 'approved'
+      };
+      historial.push(nuevaCompra);
+      localStorage.setItem('historial_compras_local', JSON.stringify(historial));
+    } catch (error) {
+      console.error('Error al guardar compra con tarjeta en localStorage:', error);
+    }
+  }
+
+  obtenerHistorialLocal(): any[] {
+    try {
+      const historialString = localStorage.getItem('historial_compras_local');
       return historialString ? JSON.parse(historialString) : [];
-    } catch (e) {
-      console.error('Error al parsear el historial local:', e);
+    } catch (error) {
+      console.error('Error al obtener historial de localStorage:', error);
       return [];
     }
   }
 
-  guardarEnHistorialLocal(item: any): void {
-    const historial = this.obtenerHistorialLocal();
-    historial.push(item);
-    localStorage.setItem('historial_compras_local', JSON.stringify(historial));
-  }
-
-  // --- Métodos de Utilidad (puedes personalizarlos con MatSnackBar si lo tienes) ---
   mostrarAlerta(message: string, type: 'success' | 'error' | 'warning' | 'info' | 'danger'): void {
     console.log(`ALERTA (${type.toUpperCase()}): ${message}`);
-    // Si estás usando Angular Material SnackBar, descomenta y usa esto:
-    /*
-    let panelClass = '';
-    if (type === 'success') {
-      panelClass = 'snackbar-success';
-    } else if (type === 'error') {
-      panelClass = 'snackbar-error';
-    } else if (type === 'warning') {
-      panelClass = 'snackbar-warning';
-    } else if (type === 'info') {
-      panelClass = 'snackbar-info';
-    }
-    this.snackBar.open(message, 'Cerrar', {
-      duration: 5000,
-      horizontalPosition: 'end',
-      verticalPosition: 'top',
-      panelClass: [panelClass]
-    });
-    */
-    // Por ahora, usaremos alert() si no tienes MatSnackBar configurado
-    // alert(`${type.toUpperCase()}: ${message}`); // Línea comentada para eliminar los pop-ups
+  }
+
+  actualizarStockDestino(destinoId: number, cantidad: number): Observable<any> {
+    return this.http.patch(`${this.destinosBaseUrl}/${destinoId}/update_stock/`, { 
+      cantidad: cantidad 
+    }).pipe(
+      catchError(error => this.handleError(error))
+    );
   }
 
   private handleError(error: HttpErrorResponse): Observable<never> {
@@ -261,8 +211,7 @@ export class CarritoService {
       }
     }
     
-    this.mostrarAlerta(userFriendlyMessage, 'error'); // Aquí todavía se llama a mostrarAlerta
-    
+    this.mostrarAlerta(userFriendlyMessage, 'error');
     return throwError(() => new Error(errorMessage));
   }
 }
